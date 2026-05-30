@@ -2,3 +2,8 @@
 .DS_Store
 docker-setting_rasp/root.tar.xz
 rasp/bluetooth_setting/address_memo.txt
+docs/_build/
+cipher/.hypothesis/
+__pycache__/
+*.pyc
+.venv/

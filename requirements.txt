@@ -1,3 +1,5 @@
+# Python 依存は pyproject.toml を正とします。uv 利用時は `uv sync` を実行してください。
+# Raspberry Pi で pip のみ使う場合はこのファイルを利用できます。
 bleak
 pandas
 numpy

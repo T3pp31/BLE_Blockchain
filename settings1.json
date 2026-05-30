@@ -1,5 +1,6 @@
 {
+    "profile": "device1",
     "addr2": "E4:5F:01:25:11:B6",
     "addr3": "DC:A6:32:8C:8F:AA",
-    "addr4":"E4:5F:01:38:C5:37"
+    "addr4": "E4:5F:01:38:C5:37"
 }
