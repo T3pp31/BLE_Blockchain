@@ -3,7 +3,6 @@
     "sleep_seconds": 30
   },
   "device1": {
-    "decode_before_verify": true,
     "steps": [
       {"action": "discoverable"},
       {"action": "send"},
@@ -18,7 +17,6 @@
     ]
   },
   "device2": {
-    "decode_before_verify": false,
     "steps": [
       {"action": "discoverable"},
       {"action": "receive"},
@@ -32,7 +30,6 @@
     ]
   },
   "device3": {
-    "decode_before_verify": false,
     "steps": [
       {"action": "discoverable"},
       {"action": "receive"},
@@ -46,7 +43,6 @@
     ]
   },
   "device4": {
-    "decode_before_verify": false,
     "steps": [
       {"action": "discoverable"},
       {"action": "receive"},

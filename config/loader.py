@@ -1,0 +1,79 @@
+import json
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+CONFIG_DIR = Path(__file__).resolve().parent
+
+
+def load_json_config(filename: str) -> dict[str, Any]:
+    path = CONFIG_DIR / filename
+    with open(path, "r", encoding="utf-8") as json_file:
+        return json.load(json_file)
+
+
+@dataclass(frozen=True)
+class L2capConfig:
+    psm: int
+    recv_bufsize: int
+    connect_timeout_sec: int
+
+
+@dataclass(frozen=True)
+class CryptoConfig:
+    aes_key_env: str
+    signature_curve: str
+
+
+@dataclass(frozen=True)
+class PathsConfig:
+    preliminary_csv: str
+
+
+@dataclass(frozen=True)
+class BlockchainConfig:
+    majority_ratio: float
+
+
+def load_l2cap_config() -> L2capConfig:
+    data = load_json_config("l2cap.json")
+    return L2capConfig(
+        psm=int(data["psm"]),
+        recv_bufsize=int(data["recv_bufsize"]),
+        connect_timeout_sec=int(data["connect_timeout_sec"]),
+    )
+
+
+def load_crypto_config() -> CryptoConfig:
+    data = load_json_config("crypto.json")
+    return CryptoConfig(
+        aes_key_env=str(data["aes_key_env"]),
+        signature_curve=str(data["signature_curve"]),
+    )
+
+
+def load_paths_config() -> PathsConfig:
+    data = load_json_config("paths.json")
+    return PathsConfig(preliminary_csv=str(data["preliminary_csv"]))
+
+
+def load_blockchain_config() -> BlockchainConfig:
+    data = load_json_config("blockchain.json")
+    return BlockchainConfig(majority_ratio=float(data["majority_ratio"]))
+
+
+def load_aes_key() -> bytes:
+    crypto = load_crypto_config()
+    key_hex = os.environ.get(crypto.aes_key_env, "")
+    if not key_hex:
+        raise ValueError(
+            f"AES key not set. Export {crypto.aes_key_env} "
+            f"(64 hex chars for AES-256). See .env.example."
+        )
+    key = bytes.fromhex(key_hex)
+    if len(key) != 32:
+        raise ValueError(
+            f"{crypto.aes_key_env} must decode to 32 bytes, got {len(key)}"
+        )
+    return key

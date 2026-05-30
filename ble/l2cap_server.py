@@ -1,65 +1,39 @@
 import bluetooth
 
-
-def l2cap_server():
-    """
-    BLE経由で情報を受け取る.
-    l2cap_client.pyで送信されてくるデータを受信することができる.
-
-    Parameters
-    ----------
-
-    Return
-    ----------
-
-    Notes
+from config.loader import load_l2cap_config
 
 
-    """
+def l2cap_server() -> bytes:
+    """Receive one serialized payload over L2CAP and return raw bytes."""
+    config = load_l2cap_config()
     server_sock = bluetooth.BluetoothSocket(bluetooth.L2CAP)
-    server_sock.bind(("", 0x1001))
+    server_sock.bind(("", config.psm))
     server_sock.listen(1)
 
-    while True:
+    try:
         print("送信されてくるデータを待ってます")
         client_sock, address = server_sock.accept()
-        print(f"接続を確認{str(address)}")
+        print(f"接続を確認{address}")
 
-        print("データを受信中")
-
+        chunks: list[bytes] = []
         total = 0
-        total_data = ""
         while True:
             try:
-                data = client_sock.recv(1024)
-            except bluetooth.BluetoothError as e:
+                chunk = client_sock.recv(config.recv_bufsize)
+            except bluetooth.BluetoothError:
                 break
 
-            if len(data) == 0:
+            if not chunk:
                 break
 
-            total += len(data)
-
+            chunks.append(chunk)
+            total += len(chunk)
             print(f"total byte read:{total}")
-            print(f"data is: {data}")
 
         client_sock.close()
-
-        print(f"データを受信しました:{data}")
+        payload = b"".join(chunks)
+        print(f"データを受信しました: {len(payload)} bytes")
         print("connection closed")
-
-        data = [s.decode() for s in data]
-
-        return data
-
-    server_sock.close()
-
-
-def l2cap_server_main(receive_data_list, len_of_device):
-    count = 0
-    while True:
-        data = l2cap_server()
-        receive_data_list.append(data)
-        count = count + 1
-        if count == len_of_device:
-            break
+        return payload
+    finally:
+        server_sock.close()

@@ -1,0 +1,5 @@
+{
+  "psm": 4097,
+  "recv_bufsize": 1024,
+  "connect_timeout_sec": 30
+}

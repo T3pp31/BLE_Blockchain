@@ -1,0 +1,4 @@
+{
+  "aes_key_env": "BLE_AES_KEY",
+  "signature_curve": "SECP256k1"
+}

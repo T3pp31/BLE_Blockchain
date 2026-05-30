@@ -1,21 +1,18 @@
 import pandas as pd
 
+from config.loader import load_paths_config
 
-def delete_excess_data(df):
-    """
-    Parameters
-    ----------
-    df : DataFrame,scanで作成したデータフレーム
 
-    Return
-    ----------
-    df : 事前登録されているもののみが残っているデータフレーム
-    """
+def delete_excess_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep only rows whose bt_addrs appear in the preliminary registration CSV."""
+    paths = load_paths_config()
+    preliminary_data = pd.read_csv(paths.preliminary_csv)
 
-    preliminary_data = pd.read_csv("data_folder/事前取得データ.csv")
-
-    # 左結合をすることによって，事前に登録されているもののみ残す．
-    df = pd.merge(preliminary_data, df, on="bt_addrs", how="left")
-    print(df)
-
-    return df
+    merged = pd.merge(preliminary_data, df, on="bt_addrs", how="inner")
+    merged = merged.rename(columns={"学籍番号": "gakuseki"})
+    columns = ["gakuseki", "bt_addrs"]
+    if "device_name" in merged.columns:
+        columns.append("device_name")
+    result = merged[columns].drop_duplicates()
+    print(result)
+    return result

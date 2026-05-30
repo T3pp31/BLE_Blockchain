@@ -7,5 +7,7 @@ cipher/.hypothesis/
 __pycache__/
 *.pyc
 .venv/
+.env
+.env.local
 output_data/
 ble/result/

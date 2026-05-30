@@ -1,27 +1,31 @@
+from __future__ import annotations
+
 import datetime as dt
 import hashlib
 import json
+from typing import Any
 
 import pandas as pd
 
+from config.loader import load_paths_config
 
-class MyBlockChain(object):
-    # ブロックチェーンを初期化する
-    def __init__(self):
-        self.chain = []
+GENESIS_PREV_HASH = (
+    "747bc42088cf0b3915982af289189e8f14d3325a7d594bc2d30a7014a536cb13"
+)
 
-    # 新しいブロックを作成する
-    def add_new_block(self, inp, outp):
-        # トランザクションを生成する
+
+class MyBlockChain:
+    def __init__(self) -> None:
+        self.chain: list[dict[str, Any]] = []
+
+    def add_new_block(self, inp: dict[str, Any], outp: dict[str, Any]) -> dict[str, Any]:
         new_transaction = self.__create_new_transaction(inp, outp)
 
-        # 前のブロックのハッシュを取得。最初だけ固定値
         if len(self.chain) > 0:
             prev_hash = self.chain[-1]["block_header"]["tran_hash"]
         else:
-            prev_hash = "747bc42088cf0b3915982af289189e8f14d3325a7d594bc2d30a7014a536cb13"
+            prev_hash = GENESIS_PREV_HASH
 
-        # トランザクションを元にブロックを生成して、チェーンに接続する
         new_block = {
             "block_index": len(self.chain) + 1,
             "block_time": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -37,80 +41,47 @@ class MyBlockChain(object):
         self.chain.append(new_block)
         return new_block
 
-    # 新しいトランザクションを生成する
-    def __create_new_transaction(self, inp, outp):
-        new_transaction = {
-            "input": inp,
-            "output": outp,
-        }
-        return new_transaction
+    def build_from_receives(self, receive_data_list: list[list[Any]]) -> None:
+        verified_dfs: list[pd.DataFrame] = []
+        for item in receive_data_list:
+            if len(item) < 4 or not item[3]:
+                continue
+            verified_dfs.append(item[0])
 
-    # ハッシュ値を計算する。SortをTrueにしているのはハッシュの整合性維持のため
-    def __calc_tran_hash(self, new_transaction):
+        if not verified_dfs:
+            return
+
+        df = pd.concat(verified_dfs, ignore_index=True)
+        df_count = df["bt_addrs"].value_counts().to_frame(name="count")
+        df_count = df_count.reset_index()
+
+        merged = pd.merge(df, df_count, on="bt_addrs", how="left")
+        merged = merged.drop_duplicates(subset=["gakuseki", "bt_addrs"])
+        merged = merged.sort_values("gakuseki")
+
+        threshold = len(verified_dfs) // 2 + 1
+
+        for _, row in merged.iterrows():
+            count = int(row["count"])
+            if count >= threshold:
+                inp = {"gakuseki": row["gakuseki"]}
+                out = {"bt_addrs": row["bt_addrs"], "count": count}
+                self.add_new_block(inp, out)
+
+    def __create_new_transaction(
+        self, inp: dict[str, Any], outp: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"input": inp, "output": outp}
+
+    def __calc_tran_hash(self, new_transaction: dict[str, Any]) -> str:
         tran_string = json.dumps(new_transaction, sort_keys=True).encode()
         return self.__hash(tran_string)
 
-    def __hash(self, str_seed):
+    def __hash(self, str_seed: str | bytes) -> str:
         return hashlib.sha256(str(str_seed).encode()).hexdigest()
 
-    # ブロックの内容を表示する
-    def dump(self, block_index=0):
+    def dump(self, block_index: int = 0) -> None:
         if block_index == 0:
             print(json.dumps(self.chain, sort_keys=False, indent=2))
         else:
-            print(
-                json.dumps(self.chain[block_index], sort_keys=False, indent=2)
-            )
-
-
-bc = MyBlockChain()
-
-
-def test_make_blockchain():
-    df1 = pd.read_csv("sample1.csv")
-    df2 = pd.read_csv("sample2.csv")
-    df3 = pd.read_csv("sample3.csv")
-    df4 = pd.read_csv("sample4.csv")
-
-    df = pd.concat([df1, df2])
-    df = pd.concat([df, df3])
-    df = pd.concat([df, df4])
-
-    df_count = df["MAC"].value_counts().to_frame()
-    df_count = df_count.reset_index()
-
-    df["count"] = df_count["MAC"]
-    df.drop_duplicates(inplace=True)
-
-    for gakuseki, mac, count in zip(df["Gakuseki"], df["MAC"], df["count"]):
-        if count >= 3:  # もう少しかっこよく50%以上を表現できると良い
-            inp = {
-                "GAC": gakuseki,
-            }
-            out = {"MAC": mac, "count": count}
-            bc.add_new_block(inp, out)
-
-
-def make_blockchain(receive_data_list):
-    df_list = []
-    for i in receive_data_list:
-        df_list.append(i[0])
-    df = pd.DataFrame()
-
-    for i in df_list:
-        df = pd.concat([df, i])
-
-    df_count = df["MAC"].value_counts().to_frame()
-    df_count = df_count.reset_index()
-
-    df["count"] = df_count["MAC"]
-    df.drop_duplicates(inplace=True)
-    df = df.sort_values("Gakuseki")
-
-    for gakuseki, mac, count in zip(df["Gakuseki"], df["MAC"], df["count"]):
-        if count / len(df_list) >= len(df_list) / 2:
-            inp = {
-                "GAK": gakuseki,
-            }
-            out = {"MAC": mac, "count": count}
-            bc.add_new_block(inp, out)
+            print(json.dumps(self.chain[block_index], sort_keys=False, indent=2))
