@@ -6,12 +6,17 @@ import pytest
 from blockchain.export import export_chain
 from blockchain.myblock import MyBlockChain
 from blockchain.persistence import ChainPersistenceError, load_chain, save_chain_export
+from tests.conftest import valid_tran_meta
 
 
 def test_save_and_load_chain_roundtrip(tmp_path: Path) -> None:
     # Given: a valid chain
     chain = MyBlockChain()
-    chain.add_new_block({"gakuseki": "19G110001"}, {"bt_addrs": "FC:66:CF:BE:10:BF"})
+    chain.add_new_block(
+        {"gakuseki": "19G110001"},
+        {"bt_addrs": "FC:66:CF:BE:10:BF", "count": 1},
+        tran_meta=valid_tran_meta(),
+    )
     export_path = tmp_path / "settings1_test.json"
 
     # When: saving and loading
@@ -30,7 +35,11 @@ def test_save_and_load_chain_roundtrip(tmp_path: Path) -> None:
 def test_load_chain_rejects_tampered_export(tmp_path: Path) -> None:
     # Given: tampered export file
     chain = MyBlockChain()
-    chain.add_new_block({"gakuseki": "19G110001"}, {"bt_addrs": "A"})
+    chain.add_new_block(
+        {"gakuseki": "19G110001"},
+        {"bt_addrs": "A", "count": 1},
+        tran_meta=valid_tran_meta(),
+    )
     export_path = tmp_path / "bad.json"
     save_chain_export(chain, export_path, device_id="device1")
     with open(export_path, "r", encoding="utf-8") as json_file:
@@ -51,7 +60,11 @@ def test_export_chain_writes_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         lambda: type("Paths", (), {"chain_export_dir": str(tmp_path)})(),
     )
     chain = MyBlockChain()
-    chain.add_new_block({"gakuseki": "19G110001"}, {"bt_addrs": "A"})
+    chain.add_new_block(
+        {"gakuseki": "19G110001"},
+        {"bt_addrs": "A", "count": 1},
+        tran_meta=valid_tran_meta(),
+    )
 
     # When: exporting
     path = export_chain(chain, "settings1")

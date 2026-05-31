@@ -7,6 +7,7 @@ from blockchain.aggregator import aggregate_chains
 from blockchain.myblock import MyBlockChain
 from blockchain.persistence import save_chain_export
 from blockchain.sync import collect_export_paths, merge_exports, select_canonical
+from tests.conftest import valid_tran_meta
 
 
 def _write_export(tmp_path: Path, name: str, blocks: int) -> Path:
@@ -14,7 +15,8 @@ def _write_export(tmp_path: Path, name: str, blocks: int) -> Path:
     for index in range(blocks):
         chain.add_new_block(
             {"gakuseki": f"19G11000{index}"},
-            {"bt_addrs": f"ADDR-{index}"},
+            {"bt_addrs": f"ADDR-{index}", "count": 1},
+            tran_meta=valid_tran_meta(),
         )
     export_path = tmp_path / name
     save_chain_export(chain, export_path, device_id=name.replace(".json", ""))

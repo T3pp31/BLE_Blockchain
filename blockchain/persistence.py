@@ -13,6 +13,13 @@ class ChainPersistenceError(ValueError):
 
 def load_chain_from_dict(data: dict[str, Any]) -> MyBlockChain:
     """Load a chain from export JSON data and validate it."""
+    version = data.get("chain_hash_version")
+    if version != CHAIN_HASH_VERSION:
+        raise ChainPersistenceError(
+            f"unsupported chain_hash_version: {version!r} "
+            f"(expected {CHAIN_HASH_VERSION})"
+        )
+
     chain_data = data.get("chain")
     if not isinstance(chain_data, list):
         raise ChainPersistenceError("export JSON must contain a 'chain' list")
@@ -24,6 +31,12 @@ def load_chain_from_dict(data: dict[str, Any]) -> MyBlockChain:
         first = errors[0]
         raise ChainPersistenceError(
             f"invalid chain at block {first.block_index}: {first.reason}"
+        )
+    meta_errors = chain.validate_tran_meta_verbose()
+    if meta_errors:
+        first = meta_errors[0]
+        raise ChainPersistenceError(
+            f"invalid tran_meta at block {first.block_index}: {first.reason}"
         )
     return chain
 

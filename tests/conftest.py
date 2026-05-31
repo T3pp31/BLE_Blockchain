@@ -23,6 +23,24 @@ def sample_scan_df() -> pd.DataFrame:
     )
 
 
+def valid_tran_meta(*, count: int = 1, content_hash: str = "a" * 64) -> dict:
+    """Build tran_meta that passes validate_tran_meta_verbose."""
+    reporters = [
+        {
+            "pubkey_fingerprint": f"{index:064d}",
+            "payload_content_hash": content_hash,
+        }
+        for index in range(count)
+    ]
+    return {
+        "count": count,
+        "majority_threshold": count,
+        "content_hash": content_hash,
+        "gakuseki_votes": {"19G110001": count},
+        "reporters": reporters,
+    }
+
+
 @pytest.fixture
 def sample_plaintext_df() -> pd.DataFrame:
     return pd.DataFrame(

@@ -2,14 +2,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from blockchain.persistence import ChainPersistenceError
 from blockchain.sync import collect_export_paths, merge_exports, select_canonical
-from config.loader import load_paths_config
+from config.loader import load_blockchain_config, load_paths_config
 
 
-def aggregate_chains(input_dir: Path, output_path: Path) -> dict:
+def _distinct_device_ids(candidates: list[dict]) -> set[str]:
+    device_ids: set[str] = set()
+    for item in candidates:
+        device_id = item.get("device_id")
+        if isinstance(device_id, str) and device_id:
+            device_ids.add(device_id)
+    return device_ids
+
+
+def aggregate_chains(
+    input_dir: Path, output_path: Path, *, strict: bool = False
+) -> dict:
     paths = collect_export_paths(
         input_dir, exclude_names=frozenset({output_path.name})
     )
@@ -17,6 +29,17 @@ def aggregate_chains(input_dir: Path, output_path: Path) -> dict:
         raise ChainPersistenceError(f"no JSON exports found in {input_dir}")
 
     candidates = merge_exports(paths)
+    config = load_blockchain_config()
+    distinct_devices = _distinct_device_ids(candidates)
+    if len(distinct_devices) < config.min_distinct_devices_for_aggregate:
+        message = (
+            f"only {len(distinct_devices)} distinct device_id(s) in exports; "
+            f"need at least {config.min_distinct_devices_for_aggregate}"
+        )
+        if strict:
+            raise ChainPersistenceError(message)
+        print(message, file=sys.stderr)
+
     canonical = select_canonical(candidates)
     canonical.pop("_source_path", None)
     canonical.pop("_chain_length", None)
@@ -46,11 +69,21 @@ def main() -> None:
         default=None,
         help=f"Output path for the canonical chain JSON (default: {default_output})",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail when fewer than min_distinct_devices_for_aggregate exports",
+    )
     args = parser.parse_args()
 
     input_dir = Path(args.input_dir or paths_config.chain_export_dir)
     output_path = Path(args.output or default_output)
-    canonical = aggregate_chains(input_dir, output_path)
+    try:
+        canonical = aggregate_chains(input_dir, output_path, strict=args.strict)
+    except ChainPersistenceError as exc:
+        print(json.dumps({"status": "error", "reason": str(exc)}), file=sys.stderr)
+        sys.exit(1)
+
     print(
         json.dumps(
             {

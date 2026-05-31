@@ -1,5 +1,8 @@
 {
   "majority_ratio": 0.5,
   "one_block_per_bt_addr": true,
-  "export_enabled": true
+  "export_enabled": true,
+  "min_verified_receives": 3,
+  "require_content_hash_agreement": true,
+  "min_distinct_devices_for_aggregate": 2
 }
