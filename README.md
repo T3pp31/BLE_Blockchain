@@ -26,6 +26,11 @@
 | `pandas_d_encode.py` | DataFrame ↔ CSV bytes |
 | `cipher/cipher.py` / `cipher/aes_cipher.py` | ECDSA・AES-256-GCM |
 | `blockchain/myblock.py` | ブロック生成・チェーン構築 |
+| `blockchain/export.py` | チェーン JSON のエクスポート（`config/paths.json` の出力先） |
+| `blockchain/persistence.py` | チェーン JSON の読み書き |
+| `blockchain/validator.py` | エクスポートファイルの検証 |
+| `blockchain/sync.py` | 複数エクスポートのマージ・最長チェーン選択 |
+| `blockchain/aggregator.py` | canonical チェーンの集約 CLI |
 | `config/runtime_profiles.json` | 端末別 `steps`（discoverable / send / receive / sleep） |
 | `settings1.json`〜`settings4.json` | 他 Pi の BT アドレス + `profile` |
 | `config/*.json` | L2CAP・暗号・パス・ブロックチェーン設定 |
@@ -83,8 +88,8 @@ export BLE_AES_KEY=$(grep BLE_AES_KEY .env | cut -d= -f2)
 |---------|------|
 | `config/l2cap.json` | L2CAP PSM、受信バッファ、接続タイムアウト |
 | `config/crypto.json` | AES 鍵の環境変数名（`BLE_AES_KEY`） |
-| `config/paths.json` | 事前登録 CSV パス |
-| `config/blockchain.json` | ブロックチェーン関連設定（`majority_ratio` は将来用・現状未使用） |
+| `config/paths.json` | 事前登録 CSV パス・チェーンエクスポート／集約ディレクトリ（`chain_export_dir`） |
+| `config/blockchain.json` | 過半数比率・1 bt_addr 1 ブロック・エクスポート有効化 |
 | `config/runtime_profiles.json` | 端末別送受信ステップ |
 
 各 Raspberry Pi には端末専用の設定ファイル（`settings1.json`〜`settings4.json`）を用意しています。
@@ -108,7 +113,17 @@ uv run python main.py --settings settings1.json
 `profile` キーは `config/runtime_profiles.json` の端末別フロー（送受信順序）と対応しています。
 送受信のタイミングや sleep 秒数を変更する場合は `config/runtime_profiles.json` を編集してください。
 
-CLI オプションは **`--settings` のみ**です（サブコマンドなし）。
+CLI オプション:
+
+| オプション | 説明 |
+|-----------|------|
+| `--settings` | 端末設定 JSON（既定: `settings1.json`） |
+| `--export-chain` | チェーンを `config/paths.json` の `chain_export_dir` に JSON 出力 |
+| `--no-export-chain` | 設定で有効でもエクスポートをスキップ |
+| `--aggregate` | `chain_export_dir` 内のエクスポートから canonical チェーンを生成 |
+| `--aggregate-output` | 集約出力パス（既定: `{chain_export_dir}/canonical.json`） |
+
+`config/blockchain.json` の `export_enabled: true` の場合、追加オプションなしでもエクスポートされます。
 
 ## 処理の流れ
 
@@ -149,7 +164,7 @@ flowchart TD
         Unpack --> Decrypt[復号]
         Decrypt --> Decode[pandas_decode]
         Decode --> VerifySig[署名検証]
-        VerifySig --> Append["[df, public_key, signature, verified] を list に追加"]
+        VerifySig --> Append["[df, public_key, signature, verified,<br/>public_key_pem, payload_content_hash] を list に追加"]
     end
 
     Disc --> StepsLoop
@@ -159,7 +174,13 @@ flowchart TD
 
     StepsLoop -->|steps 完了| Chain[MyBlockChain.build_from_receives]
     Chain --> Dump["dump → stdout（JSON）"]
-    Dump --> End([終了])
+    Dump --> ExportCheck{export_enabled<br/>または --export-chain?}
+    ExportCheck -->|yes| Export["write_chain_export<br/>→ chain_export_dir"]
+    ExportCheck -->|no| AggCheck
+    Export --> AggCheck{--aggregate?}
+    AggCheck -->|yes| Aggregate["aggregate_chains<br/>→ canonical.json"]
+    AggCheck -->|no| End
+    Aggregate --> End([終了])
 ```
 
 ### テキスト要約
@@ -199,9 +220,40 @@ flowchart LR
 
 ### ブロックチェーンへの反映
 
-- ブロックは **他 Pi から受信したペイロード**（`receive_data_list`）のみから構築します。自端末がスキャンした内容は、送信先 Pi の受信データとして間接的に載る想定です。
-- 過半数の閾値は **検証済み受信件数** に対する `len(verified_dfs) // 2 + 1` です（4 台中 3 台固定ではありません）。
-- `dump()` は標準出力のみで、ファイル永続化や Pi 間のチェーン同期は実装していません。
+本システムのチェーンは **署名付き観測レジャー + 過半数採択 + 検証可能チェーン** です（PoW は使用しません）。
+
+- ブロックは **他 Pi から受信したペイロード**（`receive_data_list`）のみから構築します。
+- 受信 DataFrame は **事前登録 CSV と再突合** されます（`filter_registered_data`）。
+- 過半数閾値は `config/blockchain.json` の `majority_ratio` から計算します（`0.5` のとき `n // 2 + 1`）。
+- 各ブロックには `tran_meta`（報告者の公開鍵 fingerprint・payload ハッシュ・count）が付きます。
+- `validate_chain()` で `prev_hash` / `tran_hash` の連鎖を検証できます。
+- `dump()` は標準出力、`data/chains/{device_id}_{timestamp}.json` へエクスポート可能です。
+
+#### チェーン集約（Pi 間）
+
+各 Pi のエクスポート JSON を 1 台に集め、最長合法チェーンを canonical として選びます。
+
+```bash
+# 各 Pi で実行（例）
+uv run python main.py --settings settings1.json
+
+# 集約（エクスポート JSON を chain_export_dir に集めたうえで。省略時は config/paths.json のパスを使用）
+uv run python -m blockchain.aggregator
+# または明示指定:
+# uv run python -m blockchain.aggregator --input-dir data/chains --output data/chains/canonical.json
+
+# または main.py から
+uv run python main.py --settings settings1.json --aggregate
+```
+
+#### Docker によるチェーン検証
+
+```bash
+docker build -t ble-chain-validator -f docker/chain-validator/Dockerfile .
+docker run --rm -v "$(pwd)/data:/data" ble-chain-validator /data/chains/canonical.json
+```
+
+終了コード `0` は `validate_chain()` 成功を意味します。詳細は [docker/chain-validator/README.md](docker/chain-validator/README.md) を参照してください。
 
 ### 実行環境の注意
 
@@ -214,19 +266,29 @@ flowchart LR
 - **ECDSA (SECP256k1)**: CSV 平文 bytes への署名・検証
 - L2CAP メッセージ形式: `version`, `ciphertext_b64`, `nonce_b64`, `public_key_pem`, `signature_b64`
 
+### 限界（設計上の前提）
+
+- 過半数は **検証済み受信 Pi 数** に対する相対過半数であり、4 台固定の BFT ではありません。
+- 悪意 Pi が過半数を占めると虚偽 `bt_addrs` を載せられる可能性があります。
+- 共有 AES 鍵はペイロード機密性を守ります。チェーン整合性はハッシュ連鎖と `tran_meta` の fingerprint で補強します。
+- 真の分散合意（PBFT 等）はスコープ外です。集約は **検証可能な最長チェーン選択** です。
+
+**Breaking change**: チェーンハッシュ算法を修正しました（`chain_hash_version: 2`）。旧形式のチェーンは再生成が必要です。
+
 ## テスト
 
 ```bash
 uv sync --group dev
 uv run pytest tests/
+uv run pytest tests/integration/
 ```
 
 ## 未実装（将来）
 
 - データを Web 上で確認
 - CSV データを LAN 内から取得
-- ブロックチェーン検証用 Docker（検討中）
+- L2CAP 経由でのチェーン JSON 同期（現状はファイルベース集約）
 
 ## 参考
 
-受信後の各要素: `[df, public_key, signature, verified]`
+受信後の各要素: `[df, public_key, signature, verified, public_key_pem, payload_content_hash]`

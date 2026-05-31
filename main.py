@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -11,6 +12,8 @@ from ble.discover import scan
 from ble.l2cap_server import l2cap_server
 from ble.message_codec import MessagePayload, pack, unpack
 from ble.start_discoverable import start_discoverable
+from blockchain.aggregator import aggregate_chains
+from blockchain.export import export_chain as write_chain_export
 from blockchain.myblock import MyBlockChain
 from cipher.aes_cipher import decrypt_payload, encrypt_payload
 from cipher.cipher import (
@@ -20,6 +23,7 @@ from cipher.cipher import (
     public_key_from_pem,
     public_key_to_pem,
 )
+from config.loader import load_blockchain_config, load_paths_config
 from delete_excess_data import delete_excess_data
 from pandas_d_encode import pandas_decode, pandas_encode
 from send_and_receive import SEND
@@ -107,12 +111,27 @@ def process_received_payload(raw: bytes) -> list[Any]:
         print("署名が正しいです")
     else:
         print("署名が正しくありません")
-    return [df, public_key, payload.signature, verified]
+    content_hash = hashlib.sha256(plaintext).hexdigest()
+    return [
+        df,
+        public_key,
+        payload.signature,
+        verified,
+        payload.public_key_pem,
+        content_hash,
+    ]
 
 
-def run_pipeline(settings_path: str) -> None:
+def run_pipeline(
+    settings_path: str,
+    *,
+    export_chain: bool | None = None,
+    aggregate: bool = False,
+    aggregate_output: str | None = None,
+) -> None:
     tanmatsu_bt_addrs, profile_name = load_settings(settings_path)
     profile = load_runtime_profile(profile_name)
+    device_id = Path(settings_path).stem
 
     print(tanmatsu_bt_addrs)
 
@@ -127,6 +146,21 @@ def run_pipeline(settings_path: str) -> None:
     chain.build_from_receives(receive_data_list)
     chain.dump()
 
+    blockchain_config = load_blockchain_config()
+    should_export = (
+        export_chain if export_chain is not None else blockchain_config.export_enabled
+    )
+    if should_export:
+        export_path = write_chain_export(chain, device_id)
+        print(f"chain exported to {export_path}")
+
+    if aggregate:
+        paths_config = load_paths_config()
+        input_dir = Path(paths_config.chain_export_dir)
+        output_path = Path(aggregate_output or f"{paths_config.chain_export_dir}/canonical.json")
+        aggregate_chains(input_dir, output_path)
+        print(f"canonical chain written to {output_path}")
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -137,9 +171,42 @@ def parse_args() -> argparse.Namespace:
         default="settings1.json",
         help="Path to device settings JSON (default: settings1.json)",
     )
+    parser.add_argument(
+        "--export-chain",
+        action="store_true",
+        help="Write chain export JSON to data/chains/",
+    )
+    parser.add_argument(
+        "--no-export-chain",
+        action="store_true",
+        help="Skip chain export even when enabled in config",
+    )
+    parser.add_argument(
+        "--aggregate",
+        action="store_true",
+        help="After export, aggregate chain JSON files into canonical.json",
+    )
+    parser.add_argument(
+        "--aggregate-output",
+        default=None,
+        help=(
+            "Output path for aggregated canonical chain "
+            "(default: {chain_export_dir}/canonical.json from config/paths.json)"
+        ),
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    run_pipeline(args.settings)
+    export_chain_flag: bool | None = None
+    if args.export_chain:
+        export_chain_flag = True
+    elif args.no_export_chain:
+        export_chain_flag = False
+    run_pipeline(
+        args.settings,
+        export_chain=export_chain_flag,
+        aggregate=args.aggregate,
+        aggregate_output=args.aggregate_output,
+    )

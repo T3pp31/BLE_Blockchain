@@ -29,11 +29,14 @@ class CryptoConfig:
 @dataclass(frozen=True)
 class PathsConfig:
     preliminary_csv: str
+    chain_export_dir: str
 
 
 @dataclass(frozen=True)
 class BlockchainConfig:
     majority_ratio: float
+    one_block_per_bt_addr: bool
+    export_enabled: bool
 
 
 def load_l2cap_config() -> L2capConfig:
@@ -55,12 +58,19 @@ def load_crypto_config() -> CryptoConfig:
 
 def load_paths_config() -> PathsConfig:
     data = load_json_config("paths.json")
-    return PathsConfig(preliminary_csv=str(data["preliminary_csv"]))
+    return PathsConfig(
+        preliminary_csv=str(data["preliminary_csv"]),
+        chain_export_dir=str(data.get("chain_export_dir", "data/chains")),
+    )
 
 
 def load_blockchain_config() -> BlockchainConfig:
     data = load_json_config("blockchain.json")
-    return BlockchainConfig(majority_ratio=float(data["majority_ratio"]))
+    return BlockchainConfig(
+        majority_ratio=float(data["majority_ratio"]),
+        one_block_per_bt_addr=bool(data.get("one_block_per_bt_addr", True)),
+        export_enabled=bool(data.get("export_enabled", True)),
+    )
 
 
 def load_aes_key() -> bytes:
