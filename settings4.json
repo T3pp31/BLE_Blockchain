@@ -2,5 +2,12 @@
     "profile": "device4",
     "addr1": "DC:A6:32:8C:95:D4",
     "addr2": "E4:5F:01:25:11:B6",
-    "addr3": "DC:A6:32:8C:8F:AA"
+    "addr3": "DC:A6:32:8C:8F:AA",
+    "signing_key_path": "keys/device4_private.pem",
+    "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE3GqOOnjv63G2DGU+neIHBHEng5vsSJRt/6cD6NsPDEaq\nIN0k7Tbt8Vkjl+yxmvVzVyzk/1jmXPuZkfJIuet2Dg==\n-----END PUBLIC KEY-----\n",
+    "peer_public_keys": {
+        "device1": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEY09OoTPhfijWpe+B9Cb7vMJB4dTZL39OTheZLIs2oy60\nvEJKjrcqFKa3gg5A/7bdvmLx7AJ1+jKj3cZWOYwj/g==\n-----END PUBLIC KEY-----\n",
+        "device2": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE94WugBb7MdP6RysD5+I5/eo2mNfc7o7b94DcXGRutDdA\n04LcP9JyVve2riFODphYpMAZ3o+/bJTbzPWfl2y5AQ==\n-----END PUBLIC KEY-----\n",
+        "device3": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEw0A/ckqm2qCv8yjjuauYBffzGisRcZhNzBnnV99FRMcW\n6UEIpC1DxmLGH6OWB0zyaAH2bH44nxdpCMMvybFmdw==\n-----END PUBLIC KEY-----\n"
+    }
 }

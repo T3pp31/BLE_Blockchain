@@ -37,6 +37,9 @@ class BlockchainConfig:
     majority_ratio: float
     one_block_per_bt_addr: bool
     export_enabled: bool
+    min_verified_receives: int
+    require_content_hash_agreement: bool
+    min_distinct_devices_for_aggregate: int
 
 
 def load_l2cap_config() -> L2capConfig:
@@ -70,6 +73,13 @@ def load_blockchain_config() -> BlockchainConfig:
         majority_ratio=float(data["majority_ratio"]),
         one_block_per_bt_addr=bool(data.get("one_block_per_bt_addr", True)),
         export_enabled=bool(data.get("export_enabled", True)),
+        min_verified_receives=int(data.get("min_verified_receives", 3)),
+        require_content_hash_agreement=bool(
+            data.get("require_content_hash_agreement", True)
+        ),
+        min_distinct_devices_for_aggregate=int(
+            data.get("min_distinct_devices_for_aggregate", 2)
+        ),
     )
 
 
