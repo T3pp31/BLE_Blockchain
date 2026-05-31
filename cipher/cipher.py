@@ -1,4 +1,13 @@
+from pathlib import Path
+from typing import Union
+
 from ecdsa import SECP256k1, BadSignatureError, SigningKey, VerifyingKey
+
+
+def load_signing_key_from_pem(path: Union[str, Path]) -> SigningKey:
+    key_path = Path(path)
+    with open(key_path, "rb") as key_file:
+        return SigningKey.from_pem(key_file.read())
 
 
 def make_key() -> tuple[SigningKey, VerifyingKey]:

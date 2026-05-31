@@ -12,3 +12,4 @@ __pycache__/
 output_data/
 ble/result/
 data/chains/
+keys/*_private.pem
