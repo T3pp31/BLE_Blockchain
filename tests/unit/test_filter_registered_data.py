@@ -30,3 +30,20 @@ def test_filter_registered_data_drops_unregistered_receive_rows() -> None:
 
     # Then: row removed
     assert result.empty
+
+
+def test_filter_registered_data_drops_wrong_gakuseki_for_registered_bt_addr() -> None:
+    # Given: registered bt_addr but gakuseki not in CSV for that address
+    df = pd.DataFrame(
+        {
+            "gakuseki": ["19G999999"],
+            "bt_addrs": ["FC:66:CF:BE:10:BF"],
+            "device_name": ["phone"],
+        }
+    )
+
+    # When: filtering with (gakuseki, bt_addrs) merge
+    result = filter_registered_data(df)
+
+    # Then: row removed
+    assert result.empty
