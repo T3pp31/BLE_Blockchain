@@ -1,6 +1,6 @@
 # Device signing keys
 
-Private keys (`*_private.pem`) are generated locally and must not be committed.
+`keys/` 配下の PEM（秘密鍵・公開鍵ファイル）は Git に含めません。各環境で次を実行して生成してください。
 
 ```bash
 uv run python scripts/generate_device_keys.py

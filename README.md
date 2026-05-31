@@ -113,7 +113,7 @@ export BLE_AES_KEY=$(grep BLE_AES_KEY .env | cut -d= -f2)
 uv run python scripts/generate_device_keys.py
 ```
 
-詳細は [keys/README.md](keys/README.md) を参照してください。`keys/*_private.pem` は Git に含めません。
+詳細は [keys/README.md](keys/README.md) を参照してください。`keys/` 配下の PEM は Git に含めません（`keys/README.md` のみ追跡）。
 
 | 端末 | 設定ファイル | profile（例） |
 |------|-------------|----------------|

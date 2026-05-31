@@ -12,4 +12,6 @@ __pycache__/
 output_data/
 ble/result/
 data/chains/
-keys/*_private.pem
+# 署名鍵は各環境で generate_device_keys.py により生成（settingsN.json に公開鍵は記載）
+keys/*
+!keys/README.md
