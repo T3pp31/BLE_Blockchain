@@ -1,40 +1,23 @@
 # addressを探すためのコード
 import asyncio
 
-import pandas as pd
 from bleak import BleakScanner
 
 
-async def scan():
+async def scan() -> tuple[list[str], list[str]]:
     """
-    周囲のデバイスをスキャンし，端末名とアドレスをデータフレーム形式で出力する
-
-    Parameters
-    ----------
-
+    周囲のデバイスをスキャンし，端末名とアドレスを返す
 
     Return
     ----------
-    df : DataFrame
-        周囲のBLEでスキャンできるすべての端末情報
-
-    Notes
-    ----------
+    bt_addrs, device_name : lists of BLE address and device name
     """
-    raw_data = []
-    bt_addrs = []
-    device_name = []
+    bt_addrs: list[str] = []
+    device_name: list[str] = []
 
     devices = await BleakScanner.discover()
-    for d in devices:
-        raw_data.append(d)
-
-        d, c = str(d).split(": ")
-        bt_addrs.append(d)
-        device_name.append(c)
-
-    df = pd.DataFrame(
-        list(zip(bt_addrs, device_name)), columns=["bt_addrs", "device_name"]
-    )
+    for device in devices:
+        bt_addrs.append(device.address)
+        device_name.append(device.name or "")
 
     return bt_addrs, device_name
