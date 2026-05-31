@@ -1,6 +1,9 @@
+"""Load, validate, and save chain export JSON files."""
+
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +57,7 @@ def chain_to_export_dict(
     device_id: str,
     schema_version: int = 1,
 ) -> dict[str, Any]:
+    """Build the JSON-serializable export payload for a chain."""
     return {
         "schema_version": schema_version,
         "chain_hash_version": CHAIN_HASH_VERSION,
@@ -71,6 +75,7 @@ def save_chain_export(
     *,
     device_id: str,
 ) -> Path:
+    """Write a validated chain export file and return its path."""
     export_path.parent.mkdir(parents=True, exist_ok=True)
     payload = chain_to_export_dict(chain, device_id=device_id)
     with open(export_path, "w", encoding="utf-8") as json_file:
@@ -79,6 +84,5 @@ def save_chain_export(
 
 
 def _current_timestamp() -> str:
-    from datetime import datetime
-
+    """Return the current local time formatted for export metadata."""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

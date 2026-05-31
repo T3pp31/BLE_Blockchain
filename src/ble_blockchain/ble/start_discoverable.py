@@ -1,7 +1,9 @@
+"""Raspberry Pi BLE を discoverable にするヘルパー。"""
+
 import subprocess
 
 
-def start_discoverable():
+def start_discoverable() -> None:
     """
     raspberrypiのbleではセキュリティの観点からか，ble検索にかからないようになっているので，定期的に以下のコマンドを実行する必要がある.
     つまりサーバーとして情報を受け取るためには以下のコマンドを毎回行う必要があるので，サーバを起動するときに以下のコマンドを自動的に実行するように変更する必要がある．
@@ -12,4 +14,6 @@ def start_discoverable():
 
 
     """
-    subprocess.run(["sudo", "bluetoothctl", "discoverable", "on"])
+    subprocess.run(
+        ["sudo", "bluetoothctl", "discoverable", "on"], check=False
+    )

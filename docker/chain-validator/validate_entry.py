@@ -7,6 +7,7 @@ from ble_blockchain.blockchain.validator import validate_export_file
 
 
 def main() -> None:
+    """Validate one chain export file from the command line."""
     if len(sys.argv) != 2:
         print("Usage: validate_entry.py <chain_export.json>", file=sys.stderr)
         sys.exit(2)

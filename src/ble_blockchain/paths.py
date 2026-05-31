@@ -1,3 +1,5 @@
+"""Repository path helpers."""
+
 from pathlib import Path
 
 

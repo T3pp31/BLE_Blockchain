@@ -1,3 +1,5 @@
+"""CLI and library helpers to aggregate chain exports."""
+
 from __future__ import annotations
 
 import argparse
@@ -26,6 +28,7 @@ def _distinct_device_ids(candidates: list[dict]) -> set[str]:
 def aggregate_chains(
     input_dir: Path, output_path: Path, *, strict: bool = False
 ) -> dict:
+    """Merge export files in input_dir and write the canonical chain JSON."""
     paths = collect_export_paths(
         input_dir, exclude_names=frozenset({output_path.name})
     )
@@ -55,6 +58,7 @@ def aggregate_chains(
 
 
 def main() -> None:
+    """CLI entry point for chain aggregation."""
     parser = argparse.ArgumentParser(
         description="Aggregate validated chain exports into a canonical chain"
     )

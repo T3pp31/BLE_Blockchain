@@ -1,3 +1,5 @@
+"""Merge and select canonical chain exports."""
+
 from __future__ import annotations
 
 import json
@@ -42,6 +44,7 @@ def collect_export_paths(
     *,
     exclude_names: frozenset[str] | None = None,
 ) -> list[Path]:
+    """List JSON export files in a directory, optionally excluding names."""
     if not input_dir.is_dir():
         raise ChainPersistenceError(f"input directory not found: {input_dir}")
     paths = sorted(input_dir.glob("*.json"))

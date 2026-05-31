@@ -1,3 +1,5 @@
+"""Write timestamped chain export files under data/chains/."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -9,6 +11,7 @@ from ble_blockchain.config.loader import load_paths_config
 
 
 def build_export_path(device_id: str, export_dir: Path | None = None) -> Path:
+    """Return a unique export path for the given device id."""
     base_dir = export_dir if export_dir is not None else Path(
         load_paths_config().chain_export_dir
     )
@@ -18,5 +21,6 @@ def build_export_path(device_id: str, export_dir: Path | None = None) -> Path:
 
 
 def export_chain(chain: MyBlockChain, device_id: str) -> Path:
+    """Export a chain to a timestamped JSON file and return its path."""
     export_path = build_export_path(device_id)
     return save_chain_export(chain, export_path, device_id=device_id)

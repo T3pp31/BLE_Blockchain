@@ -1,7 +1,8 @@
+"""Load typed configuration from JSON files under config/."""
+
 import json
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from ble_blockchain.paths import repo_root
@@ -10,6 +11,7 @@ CONFIG_DIR = repo_root() / "config"
 
 
 def load_json_config(filename: str) -> dict[str, Any]:
+    """Load a JSON object from config/<filename>."""
     path = CONFIG_DIR / filename
     with open(path, "r", encoding="utf-8") as json_file:
         return json.load(json_file)
@@ -17,6 +19,7 @@ def load_json_config(filename: str) -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class L2capConfig:
+    """L2CAP socket settings."""
     psm: int
     recv_bufsize: int
     connect_timeout_sec: int
@@ -24,18 +27,21 @@ class L2capConfig:
 
 @dataclass(frozen=True)
 class CryptoConfig:
+    """Cryptography-related configuration."""
     aes_key_env: str
     signature_curve: str
 
 
 @dataclass(frozen=True)
 class PathsConfig:
+    """Filesystem paths used by the pipeline."""
     preliminary_csv: str
     chain_export_dir: str
 
 
 @dataclass(frozen=True)
 class BlockchainConfig:
+    """Blockchain majority and export rules."""
     majority_ratio: float
     one_block_per_bt_addr: bool
     export_enabled: bool
@@ -45,6 +51,7 @@ class BlockchainConfig:
 
 
 def load_l2cap_config() -> L2capConfig:
+    """Load L2CAP settings from config/l2cap.json."""
     data = load_json_config("l2cap.json")
     return L2capConfig(
         psm=int(data["psm"]),
@@ -54,6 +61,7 @@ def load_l2cap_config() -> L2capConfig:
 
 
 def load_crypto_config() -> CryptoConfig:
+    """Load crypto settings from config/crypto.json."""
     data = load_json_config("crypto.json")
     return CryptoConfig(
         aes_key_env=str(data["aes_key_env"]),
@@ -62,6 +70,7 @@ def load_crypto_config() -> CryptoConfig:
 
 
 def load_paths_config() -> PathsConfig:
+    """Load path settings from config/paths.json."""
     data = load_json_config("paths.json")
     return PathsConfig(
         preliminary_csv=str(data["preliminary_csv"]),
@@ -70,6 +79,7 @@ def load_paths_config() -> PathsConfig:
 
 
 def load_blockchain_config() -> BlockchainConfig:
+    """Load blockchain rules from config/blockchain.json."""
     data = load_json_config("blockchain.json")
     return BlockchainConfig(
         majority_ratio=float(data["majority_ratio"]),
@@ -86,6 +96,7 @@ def load_blockchain_config() -> BlockchainConfig:
 
 
 def load_aes_key() -> bytes:
+    """Read the AES-256 key from the environment variable named in config."""
     crypto = load_crypto_config()
     key_hex = os.environ.get(crypto.aes_key_env, "")
     if not key_hex:

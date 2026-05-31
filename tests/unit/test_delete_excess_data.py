@@ -1,3 +1,5 @@
+"""Unit tests for delete_excess_data pipeline step."""
+
 import pandas as pd
 
 from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
@@ -6,6 +8,7 @@ from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
 def test_delete_excess_data_keeps_registered_only(
     sample_scan_df: pd.DataFrame,
 ) -> None:
+    """正常系: only registered bt_addrs are kept."""
     # Given: scan results with one registered and one unknown bt_addr
 
     # When: filtering against preliminary CSV
@@ -19,6 +22,7 @@ def test_delete_excess_data_keeps_registered_only(
 
 
 def test_delete_excess_data_empty_when_no_match() -> None:
+    """正常系: empty result when no addresses match."""
     # Given: scan with no registered addresses
     df = pd.DataFrame(
         {"bt_addrs": ["00:00:00:00:00:00"], "device_name": ["unknown"]}

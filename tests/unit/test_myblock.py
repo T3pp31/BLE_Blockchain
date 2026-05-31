@@ -1,9 +1,11 @@
-import hashlib
+"""Unit tests for MyBlockChain block building and validation."""
+
 from typing import Optional
 
 import pandas as pd
 import pytest
 
+from conftest import valid_tran_meta
 from ble_blockchain.blockchain.myblock import (
     MyBlockChain,
     compute_majority_threshold,
@@ -14,8 +16,13 @@ from ble_blockchain.config.loader import load_blockchain_config
 from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
 from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
 
+_DEFAULT_PUBLIC_KEY_PEM = (
+    "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----"
+)
+
 
 def _content_hash_for_df(df: pd.DataFrame) -> str:
+    """Compute payload content hash for a dataframe."""
     filtered = filter_registered_data(df)
     return payload_content_hash(pandas_encode(filtered))
 
@@ -25,15 +32,15 @@ def _receive_item(
     bt_addrs: str,
     verified: bool = True,
     *,
-    public_key_pem: str = "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----",
+    public_key_pem: str = _DEFAULT_PUBLIC_KEY_PEM,
     content_hash: Optional[str] = None,
-    device_name: str = "x",
 ) -> list:
+    """Build a receive list entry for build_from_receives tests."""
     df = pd.DataFrame(
         {
             "gakuseki": [gakuseki],
             "bt_addrs": [bt_addrs],
-            "device_name": [device_name],
+            "device_name": ["x"],
         }
     )
     if content_hash is None:
@@ -42,6 +49,7 @@ def _receive_item(
 
 
 def test_build_from_receives_majority_threshold() -> None:
+    """正常系: majority threshold produces one validated block."""
     # Given: 3 distinct reporters for same bt_addr with matching content hash
     chain = MyBlockChain()
     shared_hash = _content_hash_for_df(
@@ -88,6 +96,7 @@ def test_build_from_receives_majority_threshold() -> None:
 
 
 def test_build_from_receives_skips_unverified() -> None:
+    """正常系: unverified receives produce no blocks."""
     # Given: unverified entries only
     chain = MyBlockChain()
     receives = [
@@ -102,6 +111,7 @@ def test_build_from_receives_skips_unverified() -> None:
 
 
 def test_build_from_receives_empty() -> None:
+    """正常系: empty receive list leaves chain empty."""
     # Given: empty receive list
     chain = MyBlockChain()
 
@@ -115,6 +125,7 @@ def test_build_from_receives_empty() -> None:
 def test_build_from_receives_below_threshold_no_block(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """正常系: split votes below threshold produce no block."""
     # Given: 4 verified reporters split 2+2 across bt_addrs, threshold=3
     monkeypatch.setattr(
         "ble_blockchain.pipeline.delete_excess_data._load_preliminary_data",
@@ -140,9 +151,8 @@ def test_build_from_receives_below_threshold_no_block(
     assert len(chain.chain) == 0
 
 
-def test_build_from_receives_min_verified_receives_not_met(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_build_from_receives_min_verified_receives_not_met() -> None:
+    """正常系: below min_verified_receives produces no block."""
     # Given: only 2 verified receives while min_verified_receives=3
     chain = MyBlockChain()
     receives = [
@@ -169,6 +179,7 @@ def test_build_from_receives_min_verified_receives_not_met(
 def test_compute_majority_threshold_default_ratio(
     verified_count: int, expected: int
 ) -> None:
+    """正常系: compute_majority_threshold uses configured ratio."""
     # Given/When: ratio is 0.5 (strict majority)
     config = load_blockchain_config()
     assert config.majority_ratio == 0.5
@@ -178,6 +189,7 @@ def test_compute_majority_threshold_default_ratio(
 
 
 def test_add_new_block_chain_links_and_validates() -> None:
+    """正常系: consecutive blocks link via prev_hash and validate."""
     # Given: empty chain
     chain = MyBlockChain()
 
@@ -185,44 +197,23 @@ def test_add_new_block_chain_links_and_validates() -> None:
     first = chain.add_new_block(
         {"gakuseki": "19G110001"},
         {"bt_addrs": "A", "count": 1},
-        tran_meta={
-            "count": 1,
-            "majority_threshold": 1,
-            "content_hash": "a" * 64,
-            "gakuseki_votes": {"19G110001": 1},
-            "reporters": [
-                {
-                    "pubkey_fingerprint": "f" * 64,
-                    "payload_content_hash": "a" * 64,
-                }
-            ],
-        },
+        tran_meta=valid_tran_meta(),
     )
     second = chain.add_new_block(
         {"gakuseki": "19G110002"},
         {"bt_addrs": "B", "count": 1},
-        tran_meta={
-            "count": 1,
-            "majority_threshold": 1,
-            "content_hash": "b" * 64,
-            "gakuseki_votes": {"19G110002": 1},
-            "reporters": [
-                {
-                    "pubkey_fingerprint": "e" * 64,
-                    "payload_content_hash": "b" * 64,
-                }
-            ],
-        },
+        tran_meta=valid_tran_meta(content_hash="b" * 64, gakuseki="19G110002"),
     )
 
     # Then: prev_hash links and validation passes
     assert first["block_index"] == 1
     assert second["block_header"]["prev_hash"] == first["block_header"]["tran_hash"]
     assert chain.validate_chain()
-    assert chain.validate_tran_meta_verbose() == []
+    assert not chain.validate_tran_meta_verbose()
 
 
 def test_validate_chain_detects_tampered_tran_hash() -> None:
+    """異常系: tampered tran_hash fails chain validation."""
     # Given: valid chain
     chain = MyBlockChain()
     chain.add_new_block({"gakuseki": "19G110001"}, {"bt_addrs": "A", "count": 1})
@@ -236,6 +227,7 @@ def test_validate_chain_detects_tampered_tran_hash() -> None:
 
 
 def test_build_from_receives_filters_unregistered_bt_addr() -> None:
+    """正常系: unregistered bt_addrs are filtered before counting."""
     # Given: only unregistered bt_addr reports
     chain = MyBlockChain()
     receives = [
@@ -252,6 +244,7 @@ def test_build_from_receives_filters_unregistered_bt_addr() -> None:
 
 
 def test_build_from_receives_includes_tran_meta_reporters() -> None:
+    """正常系: tran_meta includes reporter proofs after build."""
     # Given: 3 reports with distinct reporter fingerprints and same content hash
     chain = MyBlockChain()
     shared_hash = _content_hash_for_df(
@@ -295,6 +288,7 @@ def test_build_from_receives_includes_tran_meta_reporters() -> None:
 
 
 def test_gakuseki_tie_produces_no_block() -> None:
+    """正常系: tied gakuseki votes produce no block."""
     # Given: same bt_addr with tied gakuseki votes (2 vs 2) among 4 reporters
     chain = MyBlockChain()
     receives = [
@@ -312,6 +306,7 @@ def test_gakuseki_tie_produces_no_block() -> None:
 
 
 def test_row_inflation_same_reporter_does_not_satisfy_majority() -> None:
+    """正常系: duplicate rows from one reporter do not satisfy majority."""
     # Given: one reporter duplicated in receive list with 3 identical rows each
     chain = MyBlockChain()
     df = pd.DataFrame(
@@ -336,6 +331,7 @@ def test_row_inflation_same_reporter_does_not_satisfy_majority() -> None:
 
 
 def test_content_hash_mismatch_blocks_adoption() -> None:
+    """正常系: content hash mismatch prevents block adoption."""
     # Given: 3 reporters but two different content hashes
     chain = MyBlockChain()
     hash_a = _content_hash_for_df(
@@ -376,6 +372,7 @@ def test_content_hash_mismatch_blocks_adoption() -> None:
 
 
 def test_validate_tran_meta_detects_tampered_count() -> None:
+    """異常系: inconsistent tran_meta.count is detected."""
     # Given: block with inconsistent tran_meta.count
     chain = MyBlockChain()
     chain.add_new_block(

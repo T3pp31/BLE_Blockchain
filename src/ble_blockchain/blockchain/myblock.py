@@ -1,3 +1,5 @@
+"""In-memory blockchain built from verified BLE receives."""
+
 from __future__ import annotations
 
 import datetime as dt
@@ -22,12 +24,14 @@ CHAIN_HASH_VERSION = 2
 
 @dataclass(frozen=True)
 class ValidationError:
+    """One structural or meta validation failure for a block."""
     block_index: int
     reason: str
 
 
 @dataclass
 class VerifiedReceive:
+    """One verified receive entry used for majority adoption."""
     df: pd.DataFrame
     pubkey_fingerprint: str
     payload_content_hash: str
@@ -43,14 +47,18 @@ def compute_majority_threshold(verified_count: int, majority_ratio: float) -> in
 
 
 def pubkey_fingerprint(public_key_pem: str) -> str:
+    """Return SHA-256 hex digest of a PEM-encoded public key."""
     return hashlib.sha256(public_key_pem.encode("utf-8")).hexdigest()
 
 
 def payload_content_hash(plaintext: bytes) -> str:
+    """Return SHA-256 hex digest of encoded payload plaintext."""
     return hashlib.sha256(plaintext).hexdigest()
 
 
 class MyBlockChain:
+    """Build and validate a chain of majority-adopted BLE observations."""
+
     def __init__(self) -> None:
         self.chain: list[dict[str, Any]] = []
         self._last_threshold: int = 0
@@ -59,14 +67,17 @@ class MyBlockChain:
 
     @property
     def last_majority_threshold(self) -> int:
+        """Minimum reporter count required for the last build."""
         return self._last_threshold
 
     @property
     def last_verified_receive_count(self) -> int:
+        """Number of verified receives considered in the last build."""
         return self._last_verified_count
 
     @property
     def verified_entries(self) -> list[VerifiedReceive]:
+        """Copy of verified entries from the last build."""
         return list(self._verified_entries)
 
     def add_new_block(
@@ -75,6 +86,7 @@ class MyBlockChain:
         outp: dict[str, Any],
         tran_meta: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """Append one block for the given input/output transaction."""
         new_transaction = self.__create_new_transaction(inp, outp)
         reporter_count = int(outp.get("count", 1))
 
@@ -102,7 +114,10 @@ class MyBlockChain:
         self.chain.append(new_block)
         return new_block
 
-    def build_from_receives(self, receive_data_list: list[list[Any]]) -> None:
+    def build_from_receives(  # pylint: disable=too-many-locals
+        self, receive_data_list: list[list[Any]]
+    ) -> None:
+        """Build blocks from verified receive tuples using majority rules."""
         config = load_blockchain_config()
         verified_entries = self._parse_verified_receives(receive_data_list)
         self._verified_entries = verified_entries
@@ -184,13 +199,14 @@ class MyBlockChain:
 
         return verified_entries
 
-    def _compute_adoption_for_bt_addr(
+    def _compute_adoption_for_bt_addr(  # pylint: disable=too-many-locals
         self,
         verified_entries: list[VerifiedReceive],
         bt_addr: str,
         threshold: int,
         config: Any,
     ) -> tuple[str, int, list[dict[str, str]], str, dict[str, int]] | None:
+        """Return adoption data for one bt_addr when threshold is met."""
         reporters_for_addr: list[VerifiedReceive] = []
         for entry in verified_entries:
             if bt_addr in entry.df["bt_addrs"].astype(str).values:
@@ -243,9 +259,11 @@ class MyBlockChain:
         )
 
     def validate_chain(self) -> bool:
+        """Return True when the chain passes structural validation."""
         return len(self.validate_chain_verbose()) == 0
 
     def validate_chain_verbose(self) -> list[ValidationError]:
+        """Return structural validation errors for each invalid block."""
         errors: list[ValidationError] = []
         prev_tran_hash = GENESIS_PREV_HASH
 
@@ -303,7 +321,9 @@ class MyBlockChain:
 
         return errors
 
-    def validate_tran_meta_verbose(self) -> list[ValidationError]:
+    def validate_tran_meta_verbose(  # pylint: disable=too-many-locals,too-many-branches
+        self,
+    ) -> list[ValidationError]:
         """Validate tran_meta fields against adoption rules (no receive replay)."""
         config = load_blockchain_config()
         errors: list[ValidationError] = []
@@ -421,6 +441,7 @@ class MyBlockChain:
         return hashlib.sha256(data).hexdigest()
 
     def dump(self, block_index: int = 0) -> None:
+        """Print the full chain or one block as JSON."""
         if block_index == 0:
             print(json.dumps(self.chain, sort_keys=False, indent=2))
         else:

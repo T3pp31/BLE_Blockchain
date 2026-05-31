@@ -1,3 +1,5 @@
+"""Filter scan and receive DataFrames against preliminary registration data."""
+
 import pandas as pd
 
 from ble_blockchain.config.loader import load_paths_config

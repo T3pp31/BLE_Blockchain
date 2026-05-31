@@ -1,5 +1,4 @@
-# addressを探すためのコード
-import asyncio
+"""周囲の BLE デバイスをスキャンしてアドレスと端末名を返す。"""
 
 from bleak import BleakScanner
 

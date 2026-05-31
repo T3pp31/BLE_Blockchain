@@ -1,3 +1,5 @@
+"""CLI entry point for the BLE scan, exchange, and blockchain pipeline."""
+
 import argparse
 import asyncio
 import json
@@ -30,6 +32,7 @@ RUNTIME_PROFILES_PATH = repo_root() / "config/runtime_profiles.json"
 
 
 def load_runtime_profile(profile_name: str) -> dict[str, Any]:
+    """Load a named runtime profile from config/runtime_profiles.json."""
     with open(RUNTIME_PROFILES_PATH, "r", encoding="utf-8") as json_file:
         profiles = json.load(json_file)
 
@@ -40,6 +43,7 @@ def load_runtime_profile(profile_name: str) -> dict[str, Any]:
 
 
 def build_send_payload(settings: DeviceSettings) -> bytes:
+    """Scan, filter, sign, and encrypt a payload ready for BLE send."""
     secret_key = load_signing_key_from_pem(settings.signing_key_path)
     public_key = secret_key.verifying_key
 
@@ -68,6 +72,7 @@ def run_communication_steps(
     tanmatsu_bt_addrs: list[str],
     receive_data_list: list[Any],
 ) -> None:
+    """Execute discoverable, send, receive, and sleep steps from a profile."""
     defaults = {"sleep_seconds": 30}
     if RUNTIME_PROFILES_PATH.exists():
         with open(RUNTIME_PROFILES_PATH, "r", encoding="utf-8") as json_file:
@@ -80,12 +85,17 @@ def run_communication_steps(
         if action == "discoverable":
             start_discoverable()
         elif action == "send":
-            from ble_blockchain.pipeline.send_and_receive import SEND
+            # PyBluez is Linux-only; defer import so macOS dev/tests can load main.
+            from ble_blockchain.pipeline.send_and_receive import (  # pylint: disable=import-outside-toplevel
+                SEND,
+            )
 
             payload_bytes = build_send_payload(settings)
             SEND(tanmatsu_bt_addrs, payload_bytes)
         elif action == "receive":
-            from ble_blockchain.ble.l2cap_server import l2cap_server
+            from ble_blockchain.ble.l2cap_server import (  # pylint: disable=import-outside-toplevel
+                l2cap_server,
+            )
 
             receive_data_list.append(
                 process_received_payload(l2cap_server(), settings.trusted_peer_pems)
@@ -99,6 +109,7 @@ def run_communication_steps(
 def process_received_payload(
     raw: bytes, trusted_peer_pems: frozenset[str]
 ) -> list[Any]:
+    """Decrypt, verify, and decode one received payload."""
     try:
         payload = unpack(raw)
         public_key = public_key_from_pem(payload.public_key_pem)
@@ -132,7 +143,7 @@ def process_received_payload(
         return [None, None, b"", False, None, None]
 
 
-def run_pipeline(
+def run_pipeline(  # pylint: disable=too-many-locals
     settings_path: str,
     *,
     export_chain: Optional[bool] = None,
@@ -140,6 +151,7 @@ def run_pipeline(
     aggregate_output: Optional[str] = None,
     aggregate_strict: bool = False,
 ) -> None:
+    """Run the full scan, exchange, chain build, export, and optional aggregate flow."""
     settings = load_device_settings(settings_path)
     profile = load_runtime_profile(settings.profile)
     device_id = Path(settings_path).stem
@@ -175,6 +187,7 @@ def run_pipeline(
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    """Parse CLI arguments for the pipeline entry point."""
     parser = argparse.ArgumentParser(
         description="BLE scan, sign, exchange, and blockchain pipeline"
     )
@@ -215,6 +228,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
 
 
 def main(argv: Optional[list[str]] = None) -> None:
+    """CLI main: parse args and run the pipeline."""
     args = parse_args(argv)
     export_chain_flag: Optional[bool] = None
     if args.export_chain:

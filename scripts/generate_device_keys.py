@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
 from ble_blockchain.cipher.cipher import make_key, public_key_to_pem
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 KEYS_DIR = REPO_ROOT / "keys"
 DEVICES = ("device1", "device2", "device3", "device4")
@@ -21,6 +21,7 @@ SETTINGS_FILES = (
 
 
 def main() -> None:
+    """Generate device key pairs and update settings JSON files."""
     KEYS_DIR.mkdir(parents=True, exist_ok=True)
     public_keys: dict[str, str] = {}
 

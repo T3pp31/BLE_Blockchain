@@ -1,3 +1,5 @@
+"""L2CAP client for sending BLE payload bytes (Linux / PyBluez)."""
+
 import bluetooth
 
 from ble_blockchain.config.loader import load_l2cap_config

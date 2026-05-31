@@ -16,9 +16,13 @@ jobs:
           version: "latest"
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
+      - name: Install Bluetooth build dependencies (Linux)
+        run: sudo apt-get update && sudo apt-get install -y libbluetooth-dev
       - name: Install dependencies
         run: uv sync --group dev --python ${{ matrix.python-version }}
       - name: Analysing the code with pylint
         run: |
           uv run --python ${{ matrix.python-version }} pylint \
             $(git ls-files '*.py' | grep -v docs/_build)
+      - name: Run tests
+        run: uv run --python ${{ matrix.python-version }} pytest tests/

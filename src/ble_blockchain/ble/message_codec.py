@@ -1,3 +1,5 @@
+"""JSON envelope codec for encrypted BLE message payloads."""
+
 import base64
 import json
 from dataclasses import dataclass
@@ -8,6 +10,7 @@ MESSAGE_VERSION = 1
 
 @dataclass(frozen=True)
 class MessagePayload:
+    """Wire-format fields for one signed, encrypted BLE message."""
     ciphertext: bytes
     nonce: bytes
     public_key_pem: str
@@ -15,6 +18,7 @@ class MessagePayload:
 
 
 def pack(payload: MessagePayload) -> bytes:
+    """Serialize a payload to JSON bytes."""
     envelope: dict[str, Any] = {
         "version": MESSAGE_VERSION,
         "ciphertext_b64": base64.b64encode(payload.ciphertext).decode("ascii"),
@@ -26,6 +30,7 @@ def pack(payload: MessagePayload) -> bytes:
 
 
 def unpack(data: bytes) -> MessagePayload:
+    """Deserialize JSON bytes into a MessagePayload."""
     envelope = json.loads(data.decode("utf-8"))
     version = envelope.get("version")
     if version != MESSAGE_VERSION:

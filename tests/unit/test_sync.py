@@ -1,8 +1,10 @@
-import json
+"""Unit tests for chain sync and aggregation."""
+
 from pathlib import Path
 
 import pytest
 
+from conftest import valid_tran_meta
 from ble_blockchain.blockchain.aggregator import aggregate_chains
 from ble_blockchain.blockchain.myblock import MyBlockChain
 from ble_blockchain.blockchain.persistence import save_chain_export
@@ -11,10 +13,10 @@ from ble_blockchain.blockchain.sync import (
     merge_exports,
     select_canonical,
 )
-from tests.conftest import valid_tran_meta
 
 
 def _write_export(tmp_path: Path, name: str, blocks: int) -> Path:
+    """Write a chain export file with the given number of blocks."""
     chain = MyBlockChain()
     for index in range(blocks):
         chain.add_new_block(
@@ -28,6 +30,7 @@ def _write_export(tmp_path: Path, name: str, blocks: int) -> Path:
 
 
 def test_select_canonical_prefers_longer_chain(tmp_path: Path) -> None:
+    """正常系: longer chain is selected as canonical."""
     # Given: two exports with different lengths
     short_path = _write_export(tmp_path, "short.json", blocks=1)
     long_path = _write_export(tmp_path, "long.json", blocks=3)
@@ -41,6 +44,7 @@ def test_select_canonical_prefers_longer_chain(tmp_path: Path) -> None:
 
 
 def test_aggregate_chains_writes_output(tmp_path: Path) -> None:
+    """正常系: aggregate_chains writes canonical output file."""
     # Given: export files
     _write_export(tmp_path, "a.json", blocks=2)
     _write_export(tmp_path, "b.json", blocks=1)
@@ -55,6 +59,7 @@ def test_aggregate_chains_writes_output(tmp_path: Path) -> None:
 
 
 def test_collect_export_paths_excludes_output_file(tmp_path: Path) -> None:
+    """正常系: canonical output file is excluded from collection."""
     # Given: device exports and an existing canonical output in the same directory
     _write_export(tmp_path, "a.json", blocks=2)
     _write_export(tmp_path, "b.json", blocks=1)
@@ -71,6 +76,7 @@ def test_collect_export_paths_excludes_output_file(tmp_path: Path) -> None:
 
 
 def test_aggregate_chains_ignores_existing_canonical(tmp_path: Path) -> None:
+    """正常系: stale canonical.json is ignored on re-aggregation."""
     # Given: exports and a prior canonical.json in the input directory
     _write_export(tmp_path, "short.json", blocks=1)
     long_path = _write_export(tmp_path, "long.json", blocks=3)
@@ -86,6 +92,7 @@ def test_aggregate_chains_ignores_existing_canonical(tmp_path: Path) -> None:
 
 
 def test_collect_export_paths_empty_dir_raises(tmp_path: Path) -> None:
+    """異常系: empty directory raises on aggregation."""
     # Given: empty directory
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()

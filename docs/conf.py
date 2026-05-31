@@ -1,8 +1,13 @@
+"""Sphinx configuration for BLE_Blockchain documentation."""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# Sphinx requires lowercase module-level settings (project, copyright, html_theme).
+# pylint: disable=invalid-name,redefined-builtin
 
 # -- Path setup --------------------------------------------------------------
 

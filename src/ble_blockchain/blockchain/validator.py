@@ -1,3 +1,5 @@
+"""CLI helper to validate a chain export JSON file."""
+
 from __future__ import annotations
 
 import json
@@ -8,6 +10,7 @@ from ble_blockchain.blockchain.persistence import ChainPersistenceError, load_ch
 
 
 def validate_export_file(path: Path) -> int:
+    """Validate one chain export file; return 0 on success, 1 on failure."""
     try:
         chain = load_chain(path)
     except (ChainPersistenceError, OSError, json.JSONDecodeError) as exc:

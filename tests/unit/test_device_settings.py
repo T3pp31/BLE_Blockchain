@@ -1,3 +1,5 @@
+"""Unit tests for device settings loading."""
+
 import json
 from pathlib import Path
 
@@ -7,6 +9,7 @@ from ble_blockchain.config.device_settings import load_device_settings
 
 
 def test_load_device_settings_reads_peer_keys(tmp_path: Path) -> None:
+    """正常系: peer public keys are loaded for trust checks."""
     # Given: settings with signing key path and peer public keys
     settings_path = tmp_path / "settings.json"
     settings_path.write_text(
@@ -35,6 +38,7 @@ def test_load_device_settings_reads_peer_keys(tmp_path: Path) -> None:
 
 
 def test_load_device_settings_requires_key_fields(tmp_path: Path) -> None:
+    """異常系: missing required key fields raises ValueError."""
     # Given: settings missing public_key_pem
     settings_path = tmp_path / "bad.json"
     settings_path.write_text(

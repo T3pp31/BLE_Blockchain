@@ -1,3 +1,5 @@
+"""Per-device settings loaded from JSON."""
+
 from __future__ import annotations
 
 import json
@@ -8,6 +10,7 @@ from typing import Any, Union
 
 @dataclass(frozen=True)
 class DeviceSettings:
+    """Runtime settings for one BLE/blockchain device."""
     profile: str
     tanmatsu_bt_addrs: list[str]
     signing_key_path: str
@@ -16,6 +19,7 @@ class DeviceSettings:
 
 
 def load_device_settings(settings_path: Union[str, Path]) -> DeviceSettings:
+    """Load and validate device settings from a JSON file."""
     path = Path(settings_path)
     with open(path, "r", encoding="utf-8") as json_file:
         data: dict[str, Any] = json.load(json_file)
