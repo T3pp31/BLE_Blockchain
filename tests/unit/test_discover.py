@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from ble.discover import scan
+from ble_blockchain.ble.discover import scan
 
 
 def test_scan_uses_bleak_device_fields() -> None:
@@ -18,7 +18,9 @@ def test_scan_uses_bleak_device_fields() -> None:
 
     # When: scanning
     async def run_scan():
-        with patch("ble.discover.BleakScanner.discover", mock_discover):
+        with patch(
+            "ble_blockchain.ble.discover.BleakScanner.discover", mock_discover
+        ):
             return await scan()
 
     bt_addrs, device_names = asyncio.run(run_scan())

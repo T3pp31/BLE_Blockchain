@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from config.device_settings import load_device_settings
+from ble_blockchain.config.device_settings import load_device_settings
 
 
 def test_load_device_settings_reads_peer_keys(tmp_path: Path) -> None:

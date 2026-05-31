@@ -1,4 +1,4 @@
-delete\_excess\_data モジュール
-================================
+ble_blockchain.pipeline.delete_excess_data
+==========================================
 
-.. automodule:: delete_excess_data
+.. automodule:: ble_blockchain.pipeline.delete_excess_data

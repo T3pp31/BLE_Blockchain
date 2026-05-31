@@ -3,10 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from blockchain.aggregator import aggregate_chains
-from blockchain.myblock import MyBlockChain
-from blockchain.persistence import save_chain_export
-from blockchain.sync import collect_export_paths, merge_exports, select_canonical
+from ble_blockchain.blockchain.aggregator import aggregate_chains
+from ble_blockchain.blockchain.myblock import MyBlockChain
+from ble_blockchain.blockchain.persistence import save_chain_export
+from ble_blockchain.blockchain.sync import (
+    collect_export_paths,
+    merge_exports,
+    select_canonical,
+)
 from tests.conftest import valid_tran_meta
 
 

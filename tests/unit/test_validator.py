@@ -3,13 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from blockchain.validator import validate_export_file
+from ble_blockchain.blockchain.validator import validate_export_file
 
 
 def test_validate_export_file_success(tmp_path: Path) -> None:
     # Given: minimal valid export with consistent tran_meta
-    from blockchain.myblock import MyBlockChain
-    from blockchain.persistence import save_chain_export
+    from ble_blockchain.blockchain.myblock import MyBlockChain
+    from ble_blockchain.blockchain.persistence import save_chain_export
 
     chain = MyBlockChain()
     chain.add_new_block(
@@ -48,8 +48,8 @@ def test_validate_export_file_rejects_wrong_chain_hash_version(
     tmp_path: Path,
 ) -> None:
     # Given: export with unsupported chain_hash_version
-    from blockchain.persistence import save_chain_export
-    from blockchain.myblock import MyBlockChain
+    from ble_blockchain.blockchain.persistence import save_chain_export
+    from ble_blockchain.blockchain.myblock import MyBlockChain
 
     chain = MyBlockChain()
     chain.add_new_block({"gakuseki": "19G110001"}, {"bt_addrs": "A", "count": 1})

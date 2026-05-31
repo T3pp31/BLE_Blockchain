@@ -10,32 +10,54 @@
 - 同時送受信を避けるため、`config/runtime_profiles.json` で端末ごとに **ラウンドロビン**（send / receive / sleep）を定義する
 - 検証済みの受信データから **過半数** の報告が揃った `bt_addrs` をブロックに載せ、チェーンを標準出力する
 
-本番のエントリポイントは **`main.py` のみ**です（旧 `main1.py`〜`main4.py` は統合済み）。
+本番のエントリポイントは **`ble_blockchain.app.main`** です（`pyproject.toml` のコンソールコマンド `ble-blockchain`）。後方互換のためルートの `main.py` からも起動できます（旧 `main1.py`〜`main4.py` は統合済み）。
 
-## リポジトリ構成（主要）
+## リポジトリ構成
+
+```text
+BLE_Blockchain/
+├── main.py                      # 後方互換ラッパー（python main.py）
+├── pyproject.toml               # 依存関係・ble-blockchain コンソール定義
+├── settings1.json … settings4.json
+├── config/                      # JSON 設定のみ（Python コードはパッケージ内）
+├── data_folder/                 # 事前登録 CSV（paths.json で参照）
+├── keys/                        # 端末別 ECDSA 鍵（PEM は .gitignore）
+├── scripts/                     # Pi 向けセットアップ・鍵生成
+├── src/ble_blockchain/          # アプリケーション本体（import ble_blockchain）
+│   ├── app/main.py              # パイプライン
+│   ├── ble/                     # スキャン・L2CAP・メッセージ
+│   ├── blockchain/              # チェーン構築・エクスポート・集約
+│   ├── cipher/                  # ECDSA・AES-256-GCM
+│   ├── config/                  # loader.py, device_settings.py
+│   ├── pipeline/                # 前処理・L2CAP 送信ヘルパ
+│   └── paths.py                 # repo_root()（設定 JSON の基準パス）
+├── tests/                       # pytest
+├── docs/                        # Sphinx（[docs/README.md](docs/README.md)）
+└── docker/chain-validator/      # チェーン JSON 検証用 Docker
+```
+
+### 主要パス（役割）
 
 | パス | 役割 |
 |------|------|
-| `main.py` | パイプライン全体（設定読込 → ペイロード生成 → 送受信 → チェーン出力） |
-| `send_and_receive.py` | 他 Pi への L2CAP 送信（`SEND`） |
-| `ble/discover.py` | BLE スキャン（Bleak） |
-| `ble/l2cap_client.py` / `ble/l2cap_server.py` | L2CAP 送受信（PyBlueZ・Linux / Pi） |
-| `ble/start_discoverable.py` | `bluetoothctl discoverable on` |
-| `ble/message_codec.py` | JSON ペイロードの `pack` / `unpack` |
-| `delete_excess_data.py` | 事前登録 CSV との突合・フィルタ |
-| `pandas_d_encode.py` | DataFrame ↔ CSV bytes |
-| `cipher/cipher.py` / `cipher/aes_cipher.py` | ECDSA・AES-256-GCM |
-| `blockchain/myblock.py` | ブロック生成・チェーン構築 |
-| `blockchain/export.py` | チェーン JSON のエクスポート（`config/paths.json` の出力先） |
-| `blockchain/persistence.py` | チェーン JSON の読み書き |
-| `blockchain/validator.py` | エクスポートファイルの検証 |
-| `blockchain/sync.py` | 複数エクスポートのマージ・最長チェーン選択 |
-| `blockchain/aggregator.py` | canonical チェーンの集約 CLI |
+| `main.py` | 後方互換ラッパー（`python main.py` → パッケージ本体） |
+| `src/ble_blockchain/app/main.py` | パイプライン全体（設定読込 → ペイロード生成 → 送受信 → チェーン出力） |
+| `src/ble_blockchain/pipeline/send_and_receive.py` | 他 Pi への L2CAP 送信（`SEND`） |
+| `src/ble_blockchain/ble/discover.py` | BLE スキャン（Bleak） |
+| `src/ble_blockchain/ble/l2cap_client.py` / `l2cap_server.py` | L2CAP 送受信（PyBlueZ・Linux / Pi） |
+| `src/ble_blockchain/ble/start_discoverable.py` | `bluetoothctl discoverable on` |
+| `src/ble_blockchain/ble/message_codec.py` | JSON ペイロードの `pack` / `unpack` |
+| `src/ble_blockchain/pipeline/delete_excess_data.py` | 事前登録 CSV との突合・フィルタ |
+| `src/ble_blockchain/pipeline/pandas_d_encode.py` | DataFrame ↔ CSV bytes |
+| `src/ble_blockchain/cipher/` | ECDSA・AES-256-GCM |
+| `src/ble_blockchain/blockchain/` | ブロック生成・エクスポート・検証・集約 |
+| `scripts/install_package.py` | Raspberry Pi 向け apt / pip 一括セットアップ |
+| `scripts/generate_device_keys.py` | 端末鍵・`settingsN.json` 更新 |
 | `config/runtime_profiles.json` | 端末別 `steps`（discoverable / send / receive / sleep） |
-| `settings1.json`〜`settings4.json` | 他 Pi の BT アドレス + `profile` |
-| `config/*.json` | L2CAP・暗号・パス・ブロックチェーン設定 |
+| `settings1.json`〜`settings4.json` | 他 Pi の BT アドレス + `profile`（リポジトリルート） |
+| `config/*.json` | L2CAP・暗号・パス・ブロックチェーン設定（JSON のみ・ルート） |
 | `tests/` | pytest ユニットテスト |
-| `docs/` | Sphinx API リファレンス（[docs/README.md](docs/README.md)）、構成図 |
+| `docs/` | Sphinx API リファレンス、構成図 |
 | `docs/diagrams/ble-blockchain-architecture.drawio` | システム構成・処理フロー・送受信タイミング（draw.io） |
 
 ### 構成図（draw.io）
@@ -45,7 +67,7 @@
 | シート | 内容 |
 |--------|------|
 | 1-システム構成 | Pi 4 台、設定、L2CAP、ブロックチェーン集約・Docker 検証 |
-| 2-処理フロー | `main.py` のパイプライン（send 直前スキャン、受信検証、チェーン構築） |
+| 2-処理フロー | `ble_blockchain.app.main` のパイプライン（send 直前スキャン、受信検証、チェーン構築） |
 | 3-送受信タイミング | `runtime_profiles.json` によるラウンドロビン |
 
 ## セットアップ
@@ -59,8 +81,10 @@
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 cd BLE_Blockchain
-uv sync
+uv sync          # パッケージ ble-blockchain を editable インストール
 ```
+
+`uv sync` により `src/ble_blockchain` がインストールされ、`uv run ble-blockchain` や `uv run pytest` から import できます。
 
 開発用ツール（pylint / pytest）も入れる場合:
 
@@ -76,7 +100,7 @@ BLE（PyBlueZ 等）用の apt パッケージは従来どおり必要です。
 sudo apt-get install git
 git clone https://github.com/Fu-Te/BLE_Blockchain
 cd BLE_Blockchain
-python3 install_package.py   # apt + pip（Pi 向け）
+python3 scripts/install_package.py   # apt + pip（Pi 向け）
 uv sync                      # 上記のあと uv で Python 依存を揃える場合
 ```
 
@@ -125,10 +149,12 @@ uv run python scripts/generate_device_keys.py
 実行例:
 
 ```bash
+uv run ble-blockchain --settings settings1.json
+# 後方互換
 uv run python main.py --settings settings1.json
 ```
 
-`uv` を使わない場合は `python3 main.py --settings settings1.json` でも同様です。
+`uv` を使わない場合は `python3 main.py --settings settings1.json` でも同様です（パッケージがインストールされていること）。
 
 `profile` キーは `config/runtime_profiles.json` の端末別フロー（送受信順序）と対応しています。
 送受信のタイミングや sleep 秒数を変更する場合は `config/runtime_profiles.json` を編集してください。
@@ -157,13 +183,13 @@ CLI オプション:
 
 ## 処理の流れ
 
-実装（`main.py`）に基づく全体フローです。**BLE スキャンとペイロード生成は `send` ステップの直前**に行い、その後 `runtime_profiles` の `steps` を順に実行します。署名には `settingsN.json` の永続秘密鍵を使います。
+実装（`src/ble_blockchain/app/main.py`）に基づく全体フローです。**BLE スキャンとペイロード生成は `send` ステップの直前**に行い、その後 `runtime_profiles` の `steps` を順に実行します。署名には `settingsN.json` の永続秘密鍵を使います。
 
 ### 全体フローチャート
 
 ```mermaid
 flowchart TD
-    Start([main.py 起動]) --> Parse["--settings で settingsN.json を読込"]
+    Start([main / ble-blockchain 起動]) --> Parse["--settings で settingsN.json を読込"]
     Parse --> RunPipe[run_pipeline]
 
     RunPipe --> LoadSet["load_device_settings<br/>BT アドレス + 鍵 + peer 公開鍵"]
@@ -173,7 +199,7 @@ flowchart TD
     subgraph build_on_send["build_send_payload（send 直前）"]
         BuildPayload[build_send_payload] --> LoadKey[永続 ECDSA 秘密鍵を読込]
         LoadKey --> Scan[BLE スキャン discover.py]
-        Scan --> Filter[delete_excess_data<br/>事前登録 CSV と突合]
+        Scan --> Filter[pipeline.delete_excess_data<br/>事前登録 CSV と突合]
         Filter --> EncPlain[pandas_encode]
         EncPlain --> Sign[ECDSA 署名]
         Sign --> AES[AES-256-GCM 暗号化]
@@ -216,13 +242,13 @@ flowchart TD
 
 ### テキスト要約
 
-1. `settingsN.json` から他 Pi の BT アドレスと `profile` を読み込む
-2. ECDSA 秘密鍵・公開鍵を生成する
-3. BLE 端末をスキャンする（`ble/discover.py`）
-4. 事前登録 CSV と照合し不要データを除去する（`delete_excess_data.py`）
+1. `settingsN.json` から他 Pi の BT アドレスと `profile` を読み込む（`ble_blockchain.config.device_settings`）
+2. `settingsN.json` の `signing_key_path` から ECDSA 秘密鍵を読み込む（`ble_blockchain.cipher`）
+3. BLE 端末をスキャンする（`ble_blockchain.ble.discover`）
+4. 事前登録 CSV と照合し不要データを除去する（`ble_blockchain.pipeline.delete_excess_data`）
 5. CSV bytes に ECDSA 署名する
 6. 同一 CSV bytes を AES-256-GCM で暗号化する
-7. JSON ペイロードにシリアライズする（`ble/message_codec.py`）
+7. JSON ペイロードにシリアライズする（`ble_blockchain.ble.message_codec`）
 8. `runtime_profiles` の `steps` に従い、discoverable / send / receive / sleep を実行する
 9. 受信ごとに復号・署名検証する（検証失敗はチェーン追加対象外）
 10. 検証済み受信が `min_verified_receives` 以上のとき、**ユニーク報告者数**が過半数以上かつ `content_hash` が一致した `bt_addrs` を、CSV 再突合後の gakuseki 多数決でブロックに追加し、チェーンを出力する
@@ -269,15 +295,15 @@ flowchart LR
 
 ```bash
 # 各 Pi で実行（例）
-uv run python main.py --settings settings1.json
+uv run ble-blockchain --settings settings1.json
 
 # 集約（エクスポート JSON を chain_export_dir に集めたうえで。省略時は config/paths.json のパスを使用）
-uv run python -m blockchain.aggregator
+uv run python -m ble_blockchain.blockchain.aggregator
 # または明示指定:
-# uv run python -m blockchain.aggregator --input-dir data/chains --output data/chains/canonical.json
+# uv run python -m ble_blockchain.blockchain.aggregator --input-dir data/chains --output data/chains/canonical.json
 
-# または main.py から
-uv run python main.py --settings settings1.json --aggregate
+# または main / ble-blockchain から
+uv run ble-blockchain --settings settings1.json --aggregate
 ```
 
 #### Docker によるチェーン検証
@@ -292,7 +318,7 @@ docker run --rm -v "$(pwd)/data:/data" ble-chain-validator /data/chains/canonica
 ### 実行環境の注意
 
 - L2CAP（PyBlueZ）は **Linux（Raspberry Pi）** 向けです。macOS では送受信部分は動作しません。
-- 全 Pi で `main.py` を起動するタイミングの同期は、主に `sleep` 秒数に依存します。
+- 全 Pi で `ble-blockchain`（または `main.py`）を起動するタイミングの同期は、主に `sleep` 秒数に依存します。
 
 ## セキュリティ
 
@@ -316,6 +342,18 @@ docker run --rm -v "$(pwd)/data:/data" ble-chain-validator /data/chains/canonica
 uv sync --group dev
 uv run pytest tests/
 uv run pytest tests/integration/
+```
+
+`pyproject.toml` の `pythonpath` に `src` が含まれるため、リポジトリルートから `uv run pytest` で `ble_blockchain` を import できます。
+
+## API ドキュメント（Sphinx）
+
+モジュール API の HTML リファレンスは `docs/` でビルドします。手順は [docs/README.md](docs/README.md) を参照してください。
+
+```bash
+uv sync --group docs
+cd docs && make html
+# ブラウザで docs/_build/index.html を開く
 ```
 
 ## 未実装（将来）

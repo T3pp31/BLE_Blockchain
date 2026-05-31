@@ -1,6 +1,6 @@
-cipher パッケージ
-=================
+cipher
+======
 
-.. automodule:: cipher.cipher
+.. automodule:: ble_blockchain.cipher.cipher
 
-.. automodule:: cipher.aes_cipher
+.. automodule:: ble_blockchain.cipher.aes_cipher

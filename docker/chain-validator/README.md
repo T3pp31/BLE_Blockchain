@@ -1,6 +1,6 @@
 # Chain validator (Docker)
 
-Validate a chain export JSON produced by `main.py` or `blockchain.aggregator`.
+Validate a chain export JSON produced by `main.py` / `ble-blockchain` or `ble_blockchain.blockchain.aggregator`.
 
 ## Build
 

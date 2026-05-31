@@ -4,15 +4,15 @@ from typing import Optional
 import pandas as pd
 import pytest
 
-from blockchain.myblock import (
+from ble_blockchain.blockchain.myblock import (
     MyBlockChain,
     compute_majority_threshold,
     payload_content_hash,
     pubkey_fingerprint,
 )
-from config.loader import load_blockchain_config
-from delete_excess_data import filter_registered_data
-from pandas_d_encode import pandas_encode
+from ble_blockchain.config.loader import load_blockchain_config
+from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
+from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
 
 
 def _content_hash_for_df(df: pd.DataFrame) -> str:
@@ -117,7 +117,7 @@ def test_build_from_receives_below_threshold_no_block(
 ) -> None:
     # Given: 4 verified reporters split 2+2 across bt_addrs, threshold=3
     monkeypatch.setattr(
-        "delete_excess_data._load_preliminary_data",
+        "ble_blockchain.pipeline.delete_excess_data._load_preliminary_data",
         lambda: pd.DataFrame(
             {
                 "gakuseki": ["19G110001", "19G110002"],

@@ -1,15 +1,15 @@
 import pandas as pd
 
-from main import process_received_payload
-from pandas_d_encode import pandas_encode
+from ble_blockchain.app.main import process_received_payload
+from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
 
 
 def test_process_received_payload_rejects_untrusted_public_key(
     monkeypatch,
 ) -> None:
     # Given: valid signature path but untrusted PEM
-    from cipher.cipher import make_key, make_signature, public_key_to_pem
-    from cipher.aes_cipher import encrypt_payload
+    from ble_blockchain.cipher.aes_cipher import encrypt_payload
+    from ble_blockchain.cipher.cipher import make_key, make_signature, public_key_to_pem
 
     secret_key, public_key = make_key()
     df = pd.DataFrame(
@@ -24,7 +24,7 @@ def test_process_received_payload_rejects_untrusted_public_key(
     ciphertext, nonce = encrypt_payload(plaintext)
     pem = public_key_to_pem(public_key)
 
-    from ble.message_codec import MessagePayload, pack
+    from ble_blockchain.ble.message_codec import MessagePayload, pack
 
     raw = pack(
         MessagePayload(
@@ -48,9 +48,9 @@ def test_process_received_payload_accepts_trusted_peer(
     monkeypatch,
 ) -> None:
     # Given: signed payload from trusted peer PEM
-    from cipher.cipher import make_key, make_signature, public_key_to_pem
-    from cipher.aes_cipher import encrypt_payload
-    from ble.message_codec import MessagePayload, pack
+    from ble_blockchain.ble.message_codec import MessagePayload, pack
+    from ble_blockchain.cipher.aes_cipher import encrypt_payload
+    from ble_blockchain.cipher.cipher import make_key, make_signature, public_key_to_pem
 
     secret_key, public_key = make_key()
     df = pd.DataFrame(

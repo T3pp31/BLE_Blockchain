@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-CONFIG_DIR = Path(__file__).resolve().parent
+from ble_blockchain.paths import repo_root
+
+CONFIG_DIR = repo_root() / "config"
 
 
 def load_json_config(filename: str) -> dict[str, Any]:

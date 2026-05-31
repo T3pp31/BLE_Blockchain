@@ -2,13 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+COPY pyproject.toml README.md ./
+COPY src ./src
 COPY config ./config
-COPY blockchain ./blockchain
-COPY delete_excess_data.py pandas_d_encode.py ./
 COPY docker/chain-validator/validate_entry.py ./validate_entry.py
 
-ENV PYTHONPATH=/app
-
-RUN pip install --no-cache-dir pandas
+RUN pip install --no-cache-dir .
 
 ENTRYPOINT ["python", "validate_entry.py"]

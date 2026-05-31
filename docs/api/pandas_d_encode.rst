@@ -1,4 +1,4 @@
-pandas\_d\_encode モジュール
-=============================
+ble_blockchain.pipeline.pandas_d_encode
+=======================================
 
-.. automodule:: pandas_d_encode
+.. automodule:: ble_blockchain.pipeline.pandas_d_encode

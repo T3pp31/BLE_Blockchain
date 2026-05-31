@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
 
-from cipher.cipher import make_key, public_key_to_pem
+from ble_blockchain.cipher.cipher import make_key, public_key_to_pem
 
 KEYS_DIR = REPO_ROOT / "keys"
 DEVICES = ("device1", "device2", "device3", "device4")

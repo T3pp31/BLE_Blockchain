@@ -3,7 +3,7 @@ from __future__ import annotations
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from config.loader import load_aes_key
+from ble_blockchain.config.loader import load_aes_key
 
 NONCE_SIZE = 12
 TAG_SIZE = 16

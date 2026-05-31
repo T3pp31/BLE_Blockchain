@@ -1,4 +1,10 @@
-# how to use
+# BLE / L2CAP モジュール
+
+パッケージ内パス: `ble_blockchain.ble`（`discover`, `l2cap_client`, `l2cap_server`, `message_codec`, `start_discoverable`）。
+
+Pi 向けの一括セットアップはリポジトリルートで `python3 scripts/install_package.py` を実行してください。詳細はルート [README.md](../../../README.md) を参照。
+
+## システム依存（手動インストール例）
 
 ```
 $ sudo apt-get install libatlas-base-dev

@@ -14,6 +14,9 @@ dependencies = [
     "pybluez; sys_platform == 'linux'",
 ]
 
+[project.scripts]
+ble-blockchain = "ble_blockchain.app.main:main"
+
 [dependency-groups]
 dev = [
     "pylint>=3.0",
@@ -24,9 +27,16 @@ docs = [
     "sphinx-rtd-theme",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ble_blockchain"]
+
 [tool.uv]
-package = false
+package = true
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 testpaths = ["tests"]

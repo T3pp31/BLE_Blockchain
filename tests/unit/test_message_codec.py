@@ -1,6 +1,6 @@
 import pytest
 
-from ble.message_codec import MessagePayload, pack, unpack
+from ble_blockchain.ble.message_codec import MessagePayload, pack, unpack
 
 
 def test_pack_unpack_roundtrip() -> None:

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from blockchain.myblock import CHAIN_HASH_VERSION, MyBlockChain
+from ble_blockchain.blockchain.myblock import CHAIN_HASH_VERSION, MyBlockChain
 
 
 class ChainPersistenceError(ValueError):

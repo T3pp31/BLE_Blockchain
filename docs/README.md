@@ -4,7 +4,9 @@
 
 ## 前提
 
-プロジェクトのセットアップ手順はリポジトリルートの [README.md](../README.md) を参照してください。
+プロジェクトのセットアップ・実行・設定はリポジトリルートの [README.md](../README.md) を参照してください。
+
+Python コードは **`src/ble_blockchain`** パッケージにあり、JSON 設定はリポジトリルートの **`config/`** にあります。
 
 ## 依存関係のインストール
 
@@ -37,11 +39,14 @@ sphinx-build -b html . _build
 
 ## 注意
 
-- `ble.l2cap_*` や `send_and_receive` は PyBlueZ（`bluetooth`）に依存します。開発マシンが Linux でない場合、該当ページは import 警告になることがあります（Raspberry Pi 上でのビルドを推奨）。
-- `install_package` はモジュール import 時に `apt-get` を実行するため、ドキュメントビルド環境によっては autodoc が失敗することがあります。セットアップ手順はルート README を参照してください。
+- autodoc の import パスは `ble_blockchain.*` です（`docs/conf.py` で `../src` を `sys.path` に追加）。
+- `ble_blockchain.ble.l2cap_*` や `ble_blockchain.pipeline.send_and_receive` は PyBlueZ（`bluetooth`）に依存します。開発マシンが Linux でない場合、該当ページは import 警告になることがあります（Raspberry Pi 上でのビルドを推奨）。
+- **`scripts/install_package.py`** は import 時に `apt-get` / `pip` を実行するため、autodoc 対象にしていません。Pi 向けセットアップ手順はルート README を参照してください。
 
 ## 構成
 
-- `guides/overview.rst` — プロジェクト概要（日本語）
-- `api/` — モジュール API リファレンス（autodoc）
-- `diagrams/` — アーキテクチャ図（drawio）
+| パス | 内容 |
+|------|------|
+| `guides/overview.rst` | プロジェクト概要（日本語） |
+| `api/` | モジュール API（`ble_blockchain` パッケージ） |
+| `diagrams/` | アーキテクチャ図（draw.io） |

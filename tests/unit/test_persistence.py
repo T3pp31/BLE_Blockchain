@@ -3,9 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from blockchain.export import export_chain
-from blockchain.myblock import MyBlockChain
-from blockchain.persistence import ChainPersistenceError, load_chain, save_chain_export
+from ble_blockchain.blockchain.export import export_chain
+from ble_blockchain.blockchain.myblock import MyBlockChain
+from ble_blockchain.blockchain.persistence import (
+    ChainPersistenceError,
+    load_chain,
+    save_chain_export,
+)
 from tests.conftest import valid_tran_meta
 
 
@@ -56,7 +60,7 @@ def test_load_chain_rejects_tampered_export(tmp_path: Path) -> None:
 def test_export_chain_writes_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Given: chain and custom export dir
     monkeypatch.setattr(
-        "blockchain.export.load_paths_config",
+        "ble_blockchain.blockchain.export.load_paths_config",
         lambda: type("Paths", (), {"chain_export_dir": str(tmp_path)})(),
     )
     chain = MyBlockChain()

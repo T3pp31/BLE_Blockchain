@@ -1,20 +1,16 @@
-from __future__ import annotations
+#!/usr/bin/env python3
+"""Validate a chain export JSON file. Exit 0 on success, 1 on failure."""
 
-import argparse
 import sys
-from pathlib import Path
 
-from blockchain.validator import validate_export_file
+from ble_blockchain.blockchain.validator import validate_export_file
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate a BLE chain export JSON file")
-    parser.add_argument(
-        "chain_file",
-        help="Path to chain export JSON (e.g. /data/canonical.json)",
-    )
-    args = parser.parse_args()
-    sys.exit(validate_export_file(Path(args.chain_file)))
+    if len(sys.argv) != 2:
+        print("Usage: validate_entry.py <chain_export.json>", file=sys.stderr)
+        sys.exit(2)
+    sys.exit(validate_export_file(sys.argv[1]))
 
 
 if __name__ == "__main__":

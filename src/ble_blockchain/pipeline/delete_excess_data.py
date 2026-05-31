@@ -1,6 +1,6 @@
 import pandas as pd
 
-from config.loader import load_paths_config
+from ble_blockchain.config.loader import load_paths_config
 
 
 def _load_preliminary_data() -> pd.DataFrame:

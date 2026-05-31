@@ -1,6 +1,6 @@
 import pandas as pd
 
-from delete_excess_data import delete_excess_data
+from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
 
 
 def test_delete_excess_data_keeps_registered_only(

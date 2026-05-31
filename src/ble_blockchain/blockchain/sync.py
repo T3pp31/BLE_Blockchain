@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from blockchain.persistence import ChainPersistenceError, load_chain
+from ble_blockchain.blockchain.persistence import ChainPersistenceError, load_chain
 
 
 def merge_exports(paths: list[Path]) -> list[dict[str, Any]]:

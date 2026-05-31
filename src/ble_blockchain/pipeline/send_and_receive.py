@@ -1,4 +1,4 @@
-from ble.l2cap_client import l2cap_client
+from ble_blockchain.ble.l2cap_client import l2cap_client
 
 
 def SEND(bt_addrs: list[str], payload_bytes: bytes) -> None:

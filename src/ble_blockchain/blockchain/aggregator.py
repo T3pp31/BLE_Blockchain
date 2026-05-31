@@ -5,9 +5,13 @@ import json
 import sys
 from pathlib import Path
 
-from blockchain.persistence import ChainPersistenceError
-from blockchain.sync import collect_export_paths, merge_exports, select_canonical
-from config.loader import load_blockchain_config, load_paths_config
+from ble_blockchain.blockchain.persistence import ChainPersistenceError
+from ble_blockchain.blockchain.sync import (
+    collect_export_paths,
+    merge_exports,
+    select_canonical,
+)
+from ble_blockchain.config.loader import load_blockchain_config, load_paths_config
 
 
 def _distinct_device_ids(candidates: list[dict]) -> set[str]:

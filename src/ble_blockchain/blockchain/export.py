@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from blockchain.myblock import MyBlockChain
-from blockchain.persistence import save_chain_export
-from config.loader import load_paths_config
+from ble_blockchain.blockchain.myblock import MyBlockChain
+from ble_blockchain.blockchain.persistence import save_chain_export
+from ble_blockchain.config.loader import load_paths_config
 
 
 def build_export_path(device_id: str, export_dir: Path | None = None) -> Path:

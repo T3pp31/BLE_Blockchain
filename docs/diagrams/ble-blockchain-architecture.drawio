@@ -44,7 +44,7 @@
         </mxCell>
 
         <!-- Pi 群 -->
-        <mxCell id="pi-group" value="Raspberry Pi ×4（各台で main.py）" style="swimlane;horizontal=0;fillColor=#fff4e6;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="pi-group" value="Raspberry Pi ×4（各台で ble-blockchain / main.py）" style="swimlane;horizontal=0;fillColor=#fff4e6;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="360" y="80" width="880" height="640" as="geometry" />
         </mxCell>
 
@@ -61,13 +61,13 @@
           <mxGeometry x="200" y="480" width="160" height="60" as="geometry" />
         </mxCell>
 
-        <mxCell id="main-box" value="main.py（各 Pi 共通パイプライン）" style="swimlane;horizontal=0;fillColor=#ffffff;strokeColor=#d79b00;fontStyle=0" vertex="1" parent="pi-group">
+        <mxCell id="main-box" value="ble_blockchain.app.main（各 Pi 共通パイプライン）" style="swimlane;horizontal=0;fillColor=#ffffff;strokeColor=#d79b00;fontStyle=0" vertex="1" parent="pi-group">
           <mxGeometry x="120" y="150" width="640" height="300" as="geometry" />
         </mxCell>
-        <mxCell id="send-flow" value="send 直前:&#xa;discover → delete_excess_data&#xa;→ 署名(ECDSA) → AES-GCM → pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
+        <mxCell id="send-flow" value="send 直前:&#xa;ble.discover → pipeline.delete_excess_data&#xa;→ cipher 署名(ECDSA) → AES-GCM → message_codec.pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
           <mxGeometry x="30" y="40" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="l2cap" value="L2CAP 送受信&#xa;l2cap_client / l2cap_server&#xa;send_and_receive.SEND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
+        <mxCell id="l2cap" value="L2CAP 送受信&#xa;ble.l2cap_client / l2cap_server&#xa;pipeline.send_and_receive.SEND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
           <mxGeometry x="260" y="40" width="180" height="80" as="geometry" />
         </mxCell>
         <mxCell id="recv-flow" value="receive:&#xa;unpack → 復号 → 署名検証&#xa;→ peer_public_keys 照合&#xa;→ filter_registered_data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
@@ -104,7 +104,7 @@
         <mxCell id="agg-group" value="オフライン集約・検証（1 台で実行可）" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="1280" y="80" width="280" height="320" as="geometry" />
         </mxCell>
-        <mxCell id="agg" value="blockchain/aggregator&#xa;merge_exports → select_canonical&#xa;（最長合法チェーン）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="agg-group">
+        <mxCell id="agg" value="ble_blockchain.blockchain.aggregator&#xa;merge_exports → select_canonical&#xa;（最長合法チェーン）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="agg-group">
           <mxGeometry x="20" y="50" width="240" height="70" as="geometry" />
         </mxCell>
         <mxCell id="canonical" value="data/chains/canonical.json" style="shape=document;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="agg-group">
@@ -115,25 +115,25 @@
         </mxCell>
 
         <!-- モジュール凡例 -->
-        <mxCell id="mod-group" value="主要 Python モジュール" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="mod-group" value="主要 Python モジュール（src/ble_blockchain）" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="1280" y="440" width="280" height="280" as="geometry" />
         </mxCell>
-        <mxCell id="mod-ble" value="ble/: discover, message_codec, l2cap_*" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-ble" value="ble_blockchain.ble/: discover, message_codec, l2cap_*" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="35" width="260" height="25" as="geometry" />
         </mxCell>
-        <mxCell id="mod-cipher" value="cipher/: ECDSA, AES-GCM" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-cipher" value="ble_blockchain.cipher/: ECDSA, AES-GCM" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="65" width="260" height="25" as="geometry" />
         </mxCell>
-        <mxCell id="mod-filter" value="delete_excess_data.py" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-filter" value="ble_blockchain.pipeline/: delete_excess_data, pandas_d_encode, send_and_receive" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="95" width="260" height="25" as="geometry" />
         </mxCell>
-        <mxCell id="mod-bc" value="blockchain/: myblock, export, persistence,&#xa;sync, validator, aggregator" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-bc" value="ble_blockchain.blockchain/: myblock, export, persistence,&#xa;sync, validator, aggregator" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="125" width="260" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="mod-config" value="config/: loader, device_settings" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-config" value="ble_blockchain.config/: loader, device_settings&#xa;（JSON はルート config/*.json）" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="175" width="260" height="25" as="geometry" />
         </mxCell>
-        <mxCell id="mod-script" value="scripts/generate_device_keys.py" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+        <mxCell id="mod-script" value="scripts/: generate_device_keys.py, install_package.py" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
           <mxGeometry x="10" y="205" width="260" height="25" as="geometry" />
         </mxCell>
 
@@ -163,11 +163,11 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
 
-        <mxCell id="t2" value="main.py 処理フロー（現行実装）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="t2" value="ble_blockchain.app.main 処理フロー（現行実装）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="350" y="20" width="400" height="40" as="geometry" />
         </mxCell>
 
-        <mxCell id="start" value="起動&#xa;python main.py --settings settingsN.json" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+        <mxCell id="start" value="起動&#xa;uv run ble-blockchain --settings settingsN.json&#xa;（または python main.py …）" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
           <mxGeometry x="460" y="80" width="200" height="60" as="geometry" />
         </mxCell>
         <mxCell id="load" value="load_device_settings&#xa;load_runtime_profile" style="rounded=1;whiteSpace=wrap;html=1" vertex="1" parent="1">

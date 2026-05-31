@@ -1,6 +1,6 @@
 import pandas as pd
 
-from delete_excess_data import filter_registered_data
+from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
 
 
 def test_filter_registered_data_keeps_decoded_receive_df(

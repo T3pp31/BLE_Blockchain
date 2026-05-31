@@ -1,14 +1,14 @@
-blockchain パッケージ
-=====================
+blockchain
+==========
 
-.. automodule:: blockchain.myblock
+.. automodule:: ble_blockchain.blockchain.myblock
 
-.. automodule:: blockchain.persistence
+.. automodule:: ble_blockchain.blockchain.persistence
 
-.. automodule:: blockchain.validator
+.. automodule:: ble_blockchain.blockchain.validator
 
-.. automodule:: blockchain.sync
+.. automodule:: ble_blockchain.blockchain.sync
 
-.. automodule:: blockchain.aggregator
+.. automodule:: ble_blockchain.blockchain.aggregator
 
-.. automodule:: blockchain.export
+.. automodule:: ble_blockchain.blockchain.export

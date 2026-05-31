@@ -1,7 +1,7 @@
 import pytest
 from Crypto.Cipher import AES
 
-from cipher.aes_cipher import decrypt_payload, encrypt_payload
+from ble_blockchain.cipher.aes_cipher import decrypt_payload, encrypt_payload
 
 
 def test_encrypt_decrypt_roundtrip() -> None:

@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from blockchain.export import export_chain
-from blockchain.myblock import MyBlockChain
-from blockchain.persistence import load_chain
-from blockchain.validator import validate_export_file
+from ble_blockchain.blockchain.export import export_chain
+from ble_blockchain.blockchain.myblock import MyBlockChain
+from ble_blockchain.blockchain.persistence import load_chain
+from ble_blockchain.blockchain.validator import validate_export_file
 
 
 def _valid_tran_meta(count: int = 1) -> dict:
@@ -27,7 +27,7 @@ def _valid_tran_meta(count: int = 1) -> dict:
 def test_export_validate_integration(tmp_path: Path, monkeypatch) -> None:
     # Given: built chain and export path
     monkeypatch.setattr(
-        "blockchain.export.load_paths_config",
+        "ble_blockchain.blockchain.export.load_paths_config",
         lambda: type("Paths", (), {"chain_export_dir": str(tmp_path)})(),
     )
     chain = MyBlockChain()
@@ -51,8 +51,8 @@ def test_aggregate_strict_requires_multiple_devices(
     tmp_path: Path, monkeypatch
 ) -> None:
     # Given: single-device exports only
-    from blockchain.aggregator import aggregate_chains
-    from blockchain.persistence import save_chain_export
+    from ble_blockchain.blockchain.aggregator import aggregate_chains
+    from ble_blockchain.blockchain.persistence import save_chain_export
 
     chain = MyBlockChain()
     chain.add_new_block(
@@ -65,7 +65,7 @@ def test_aggregate_strict_requires_multiple_devices(
 
     # When/Then: strict aggregation fails
     import pytest
-    from blockchain.persistence import ChainPersistenceError
+    from ble_blockchain.blockchain.persistence import ChainPersistenceError
 
     with pytest.raises(ChainPersistenceError, match="distinct device_id"):
         aggregate_chains(tmp_path, output_path, strict=True)

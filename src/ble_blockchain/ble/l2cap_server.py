@@ -1,6 +1,6 @@
 import bluetooth
 
-from config.loader import load_l2cap_config
+from ble_blockchain.config.loader import load_l2cap_config
 
 
 def l2cap_server() -> bytes:

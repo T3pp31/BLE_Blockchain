@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from blockchain.persistence import ChainPersistenceError, load_chain
+from ble_blockchain.blockchain.persistence import ChainPersistenceError, load_chain
 
 
 def validate_export_file(path: Path) -> int:

@@ -1,7 +1,7 @@
 import pandas as pd
 
-from cipher.cipher import judge_signature, make_key, make_signature
-from pandas_d_encode import pandas_encode
+from ble_blockchain.cipher.cipher import judge_signature, make_key, make_signature
+from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
 
 
 def test_make_key_generates_non_empty_keys() -> None:
