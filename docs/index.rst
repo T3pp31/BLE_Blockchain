@@ -1,20 +1,16 @@
-.. BLE_BlockChain documentation master file, created by
-   sphinx-quickstart on Thu Jan 12 19:03:11 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. BLE_BlockChain documentation master file
 
-Welcome to BLE_BlockChain's documentation!
-==========================================
+BLE_BlockChain ドキュメント
+===========================
+
+卒業研究向け BLE + ブロックチェーン連携システムのドキュメントです。
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: 目次:
 
-   modules
-
-   ble/*
-   cipher/*
-   blockchain/*
+   guides/overview
+   api/index
 
 Indices and tables
 ==================

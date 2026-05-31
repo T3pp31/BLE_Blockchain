@@ -19,8 +19,14 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "BLE_BlockChain"
-copyright = "2023, Teppei.F Marie.Y Keigo.M Kazuhiro.O"
+copyright = "2023-2026, Teppei.F Marie.Y Keigo.M Kazuhiro.O"
 author = "Teppei.F Marie.Y Keigo.M Kazuhiro.O"
+
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+}
 
 
 # -- General configuration ---------------------------------------------------
@@ -29,6 +35,9 @@ author = "Teppei.F Marie.Y Keigo.M Kazuhiro.O"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
+
+# PyBlueZ は Linux のみ。macOS / Windows でも API ドキュメントを生成できるようにする。
+autodoc_mock_imports = ["bluetooth"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -1,0 +1,305 @@
+<mxfile host="app.diagrams.net" agent="BLE_Blockchain" version="22.1.0">
+  <diagram id="system-overview" name="1-システム構成">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="BLE_Blockchain システム構成（現行実装）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="500" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 外部データ -->
+        <mxCell id="ext-group" value="外部データ・環境" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="280" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="csv" value="事前登録 CSV&#xa;data_folder/事前取得データ.csv&#xa;(gakuseki, bt_addrs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="ext-group">
+          <mxGeometry x="20" y="40" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ble-dev" value="BLE 周辺デバイス&#xa;(Bleak スキャン)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="ext-group">
+          <mxGeometry x="20" y="130" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="aes-env" value="共有 AES 鍵&#xa;環境変数 BLE_AES_KEY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="ext-group">
+          <mxGeometry x="20" y="200" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="keys" value="端末署名鍵&#xa;keys/deviceN_private.pem&#xa;(Git 非コミット)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="ext-group">
+          <mxGeometry x="20" y="260" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 設定 -->
+        <mxCell id="cfg-group" value="設定ファイル" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="440" width="280" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="settings" value="settings1〜4.json&#xa;profile, addr*, signing_key_path&#xa;public_key_pem, peer_public_keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="cfg-group">
+          <mxGeometry x="20" y="40" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime" value="config/runtime_profiles.json&#xa;discoverable / send / receive / sleep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="cfg-group">
+          <mxGeometry x="20" y="120" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="blockchain-cfg" value="config/blockchain.json&#xa;過半数・min_verified_receives 等" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="cfg-group">
+          <mxGeometry x="20" y="190" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="other-cfg" value="config/l2cap.json, paths.json, crypto.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="cfg-group">
+          <mxGeometry x="20" y="250" width="240" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Pi 群 -->
+        <mxCell id="pi-group" value="Raspberry Pi ×4（各台で main.py）" style="swimlane;horizontal=0;fillColor=#fff4e6;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="360" y="80" width="880" height="640" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pi1" value="Pi 1 (device1)&#xa;settings1.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="pi-group">
+          <mxGeometry x="40" y="50" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pi2" value="Pi 2 (device2)&#xa;settings2.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="pi-group">
+          <mxGeometry x="360" y="50" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pi3" value="Pi 3 (device3)&#xa;settings3.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="pi-group">
+          <mxGeometry x="680" y="50" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pi4" value="Pi 4 (device4)&#xa;settings4.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="pi-group">
+          <mxGeometry x="200" y="480" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="main-box" value="main.py（各 Pi 共通パイプライン）" style="swimlane;horizontal=0;fillColor=#ffffff;strokeColor=#d79b00;fontStyle=0" vertex="1" parent="pi-group">
+          <mxGeometry x="120" y="150" width="640" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="send-flow" value="send 直前:&#xa;discover → delete_excess_data&#xa;→ 署名(ECDSA) → AES-GCM → pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
+          <mxGeometry x="30" y="40" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="l2cap" value="L2CAP 送受信&#xa;l2cap_client / l2cap_server&#xa;send_and_receive.SEND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
+          <mxGeometry x="260" y="40" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="recv-flow" value="receive:&#xa;unpack → 復号 → 署名検証&#xa;→ peer_public_keys 照合&#xa;→ filter_registered_data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="main-box">
+          <mxGeometry x="470" y="40" width="150" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="chain-build" value="MyBlockChain.build_from_receives&#xa;・報告者数ベース過半数&#xa;・content_hash 一致&#xa;・gakuseki 多数決" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="main-box">
+          <mxGeometry x="120" y="160" width="400" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="export-local" value="export_chain →&#xa;data/chains/{device_id}_*.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="main-box">
+          <mxGeometry x="200" y="260" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- L2CAP 矢印（Pi 間） -->
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;dashed=1" edge="1" parent="pi-group" source="pi1" target="pi2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12l" value="L2CAP" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="e12">
+          <mxGeometry relative="1" x="-0.1" y="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;dashed=1" edge="1" parent="pi-group" source="pi2" target="pi3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;dashed=1" edge="1" parent="pi-group" source="pi3" target="pi4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;dashed=1" edge="1" parent="pi-group" source="pi4" target="pi1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rr-note" value="ラウンドロビン（同時 send 回避）&#xa;runtime_profiles.json" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#666666" vertex="1" parent="pi-group">
+          <mxGeometry x="280" y="560" width="280" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 集約・検証 -->
+        <mxCell id="agg-group" value="オフライン集約・検証（1 台で実行可）" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="80" width="280" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="agg" value="blockchain/aggregator&#xa;merge_exports → select_canonical&#xa;（最長合法チェーン）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="agg-group">
+          <mxGeometry x="20" y="50" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="canonical" value="data/chains/canonical.json" style="shape=document;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="agg-group">
+          <mxGeometry x="60" y="140" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="docker" value="Docker chain-validator&#xa;validate_chain + tran_meta" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="agg-group">
+          <mxGeometry x="20" y="220" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- モジュール凡例 -->
+        <mxCell id="mod-group" value="主要 Python モジュール" style="swimlane;horizontal=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1280" y="440" width="280" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-ble" value="ble/: discover, message_codec, l2cap_*" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="35" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-cipher" value="cipher/: ECDSA, AES-GCM" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="65" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-filter" value="delete_excess_data.py" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="95" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-bc" value="blockchain/: myblock, export, persistence,&#xa;sync, validator, aggregator" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="125" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-config" value="config/: loader, device_settings" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="175" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-script" value="scripts/generate_device_keys.py" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8" vertex="1" parent="mod-group">
+          <mxGeometry x="10" y="205" width="260" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- 接続線 設定→Pi -->
+        <mxCell id="c-settings-pi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#82b366;dashed=1" edge="1" parent="1" source="settings" target="main-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c-csv-pi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d6b656;dashed=1" edge="1" parent="1" source="csv" target="send-flow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c-export-agg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450" edge="1" parent="1" source="export-local" target="agg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c-agg-can" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450" edge="1" parent="1" source="agg" target="canonical">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c-can-docker" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9673a6" edge="1" parent="1" source="canonical" target="docker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="pipeline-flow" name="2-処理フロー">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="2000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="t2" value="main.py 処理フロー（現行実装）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="400" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="start" value="起動&#xa;python main.py --settings settingsN.json" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="460" y="80" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="load" value="load_device_settings&#xa;load_runtime_profile" style="rounded=1;whiteSpace=wrap;html=1" vertex="1" parent="1">
+          <mxGeometry x="460" y="170" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="loop" value="run_communication_steps&#xa;（profile.steps を順次）" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="430" y="250" width="260" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="disc" value="discoverable&#xa;start_discoverable()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="120" y="360" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="send" value="send" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="360" y="360" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="build" value="build_send_payload&#xa;・永続鍵読込&#xa;・BLE scan + CSV突合&#xa;・署名 + AES + pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="320" y="420" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="sendl2" value="SEND (L2CAP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="360" y="530" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="recv" value="receive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="360" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="proc" value="process_received_payload&#xa;・復号・署名&#xa;・peer 公開鍵照合&#xa;・失敗時 df=None" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="720" y="400" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="sleep" value="sleep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="560" y="520" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="chain" value="build_from_receives&#xa;min_verified_receives 以上&#xa;報告者過半数 + hash一致&#xa;gakuseki 多数決" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="1">
+          <mxGeometry x="420" y="640" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dump" value="chain.dump() → stdout" style="rounded=1;whiteSpace=wrap;html=1" vertex="1" parent="1">
+          <mxGeometry x="460" y="750" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="expd" value="export_chain?&#xa;→ data/chains/" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="460" y="820" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="aggd" value="--aggregate?&#xa;aggregate_chains" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="460" y="920" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="end" value="終了" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="490" y="1020" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="start" target="load"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="load" target="loop"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f3" value="discoverable" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="loop" target="disc"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f4" value="send" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="loop" target="send"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="send" target="build"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="build" target="sendl2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f7" value="receive" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="loop" target="recv"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="recv" target="proc"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f9" value="sleep" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="loop" target="sleep"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="fback" value="次の step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1" edge="1" parent="1" source="disc" target="loop"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="210" y="290" /></Array></mxGeometry></mxCell>
+        <mxCell id="fback2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1" edge="1" parent="1" source="sendl2" target="loop"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="420" y="600" /><mxPoint x="800" y="600" /><mxPoint x="800" y="290" /></Array></mxGeometry></mxCell>
+        <mxCell id="fback3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1" edge="1" parent="1" source="proc" target="loop"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="830" y="290" /></Array></mxGeometry></mxCell>
+        <mxCell id="fback4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1" edge="1" parent="1" source="sleep" target="loop"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="610" y="600" /><mxPoint x="800" y="600" /><mxPoint x="800" y="290" /></Array></mxGeometry></mxCell>
+        <mxCell id="fdone" value="steps 完了" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="loop" target="chain"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="560" y="620" /></Array></mxGeometry></mxCell>
+        <mxCell id="f10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="chain" target="dump"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="dump" target="expd"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="expd" target="aggd"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1" edge="1" parent="1" source="aggd" target="end"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="timing" name="3-送受信タイミング">
+    <mxGraphModel dx="1200" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="t3" value="4 台 Pi 送受信タイミング（runtime_profiles.json）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d1" value="device1 (settings1)" style="swimlane;horizontal=0;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d1s" value="send" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6c8ebf;fontColor=#ffffff" vertex="1" parent="d1">
+          <mxGeometry x="20" y="35" width="60" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d1r" value="receive ×3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d1">
+          <mxGeometry x="90" y="35" width="190" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d2" value="device2 (settings2)" style="swimlane;horizontal=0;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d2r1" value="receive" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d2">
+          <mxGeometry x="20" y="35" width="70" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d2sl" value="sleep→send" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="d2">
+          <mxGeometry x="100" y="35" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d2r2" value="receive ×2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d2">
+          <mxGeometry x="190" y="35" width="90" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d3" value="device3 (settings3)" style="swimlane;horizontal=0;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d3r1" value="receive ×2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d3">
+          <mxGeometry x="20" y="35" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d3sl" value="sleep→send" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="d3">
+          <mxGeometry x="130" y="35" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d3r2" value="receive" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d3">
+          <mxGeometry x="220" y="35" width="60" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d4" value="device4 (settings4)" style="swimlane;horizontal=0;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="370" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d4r" value="receive ×3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff" vertex="1" parent="d4">
+          <mxGeometry x="20" y="35" width="150" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="d4sl" value="sleep→send" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="d4">
+          <mxGeometry x="180" y="35" width="100" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend" value="凡例: 青=send / 緑=receive / 灰=sleep&#xa;各 profile 先頭に discoverable（図省略）&#xa;時間軸 →（左から右へ順次実行）" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=8;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="400" y="70" width="320" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" value="目的: 同時 send を避け、各 Pi が他 3 台から&#xa;検証済みペイロードを受信できるようにする" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="400" y="170" width="400" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
