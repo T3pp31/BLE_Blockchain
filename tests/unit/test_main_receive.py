@@ -7,6 +7,7 @@ from ble_blockchain.ble.message_codec import MessagePayload, pack
 from ble_blockchain.cipher.aes_cipher import encrypt_payload
 from ble_blockchain.cipher.cipher import make_key, make_signature, public_key_to_pem
 from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
+from ble_blockchain.types import ReceivedPayload
 
 _SAMPLE_DF = pd.DataFrame(
     {
@@ -45,8 +46,9 @@ def test_process_received_payload_rejects_untrusted_public_key() -> None:
     result = process_received_payload(raw, trusted)
 
     # Then: not verified and no dataframe for chain
-    assert result[3] is False
-    assert result[0] is None
+    assert isinstance(result, ReceivedPayload)
+    assert result.verified is False
+    assert result.df is None
 
 
 def test_process_received_payload_accepts_trusted_peer() -> None:
@@ -58,5 +60,6 @@ def test_process_received_payload_accepts_trusted_peer() -> None:
     result = process_received_payload(raw, frozenset({pem}))
 
     # Then: verified with dataframe
-    assert result[3] is True
-    assert result[0] is not None
+    assert isinstance(result, ReceivedPayload)
+    assert result.verified is True
+    assert result.df is not None

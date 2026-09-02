@@ -8,13 +8,16 @@ import json
 import math
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 
-from ble_blockchain.config.loader import load_blockchain_config
-from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
+from ble_blockchain.config.loader import (
+    BlockchainConfig,
+    load_blockchain_config,
+)
 from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
+from ble_blockchain.types import ReceivedPayload
 
 GENESIS_PREV_HASH = (
     "747bc42088cf0b3915982af289189e8f14d3325a7d594bc2d30a7014a536cb13"
@@ -59,11 +62,25 @@ def payload_content_hash(plaintext: bytes) -> str:
 class MyBlockChain:
     """Build and validate a chain of majority-adopted BLE observations."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        filter_registered: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
+    ) -> None:
         self.chain: list[dict[str, Any]] = []
         self._last_threshold: int = 0
         self._last_verified_count: int = 0
         self._verified_entries: list[VerifiedReceive] = []
+        if filter_registered is not None:
+            self._filter_registered = filter_registered
+        else:
+            # Lazily resolve the default so blockchain does not import
+            # pipeline at module load time (caller may inject a filter).
+            from ble_blockchain.pipeline.delete_excess_data import (  # pylint: disable=import-outside-toplevel
+                filter_registered_data,
+            )
+
+            self._filter_registered = filter_registered_data
 
     @property
     def last_majority_threshold(self) -> int:
@@ -114,11 +131,12 @@ class MyBlockChain:
         self.chain.append(new_block)
         return new_block
 
-    def build_from_receives(  # pylint: disable=too-many-locals
-        self, receive_data_list: list[list[Any]]
+    def build_from_receives(
+        self, receive_data_list: list[ReceivedPayload]
     ) -> None:
-        """Build blocks from verified receive tuples using majority rules."""
+        """Build blocks from verified receive payloads using majority rules."""
         config = load_blockchain_config()
+        schema = config.data_schema
         verified_entries = self._parse_verified_receives(receive_data_list)
         self._verified_entries = verified_entries
 
@@ -135,12 +153,12 @@ class MyBlockChain:
 
         bt_addrs_seen: set[str] = set()
         for entry in verified_entries:
-            for bt_addr in entry.df["bt_addrs"].astype(str).unique():
+            for bt_addr in entry.df[schema.bt_addr_column].astype(str).unique():
                 bt_addrs_seen.add(bt_addr)
 
         for bt_addr in sorted(bt_addrs_seen):
             if config.one_block_per_bt_addr and any(
-                block["tran_body"]["output"]["bt_addrs"] == bt_addr
+                block["tran_body"]["output"][schema.output_field] == bt_addr
                 for block in self.chain
             ):
                 continue
@@ -151,40 +169,39 @@ class MyBlockChain:
             if adoption is None:
                 continue
 
-            gakuseki, reporter_count, reporters, content_hash, gakuseki_votes = (
+            identity, reporter_count, reporters, content_hash, identity_votes = (
                 adoption
             )
             tran_meta = {
                 "count": reporter_count,
                 "majority_threshold": threshold,
                 "content_hash": content_hash,
-                "gakuseki_votes": gakuseki_votes,
+                "gakuseki_votes": identity_votes,
                 "reporters": reporters,
             }
-            inp = {"gakuseki": gakuseki}
-            out = {"bt_addrs": bt_addr, "count": reporter_count}
+            inp = {schema.input_field: identity}
+            out = {schema.output_field: bt_addr, "count": reporter_count}
             self.add_new_block(inp, out, tran_meta=tran_meta)
 
     def _parse_verified_receives(
-        self, receive_data_list: list[list[Any]]
+        self, receive_data_list: list[ReceivedPayload]
     ) -> list[VerifiedReceive]:
         verified_entries: list[VerifiedReceive] = []
 
         for item in receive_data_list:
-            if len(item) < 4 or not item[3]:
+            if not item.verified:
                 continue
-            if item[0] is None:
+            if item.df is None:
                 continue
 
-            df = filter_registered_data(item[0])
+            df = self._filter_registered(item.df)
             if df.empty:
                 continue
 
-            if len(item) < 6:
+            if item.public_key_pem is None or item.payload_content_hash is None:
                 continue
 
-            public_key_pem = str(item[4])
-            declared_hash = str(item[5])
+            declared_hash = str(item.payload_content_hash)
             encoded_hash = payload_content_hash(pandas_encode(df))
             if declared_hash != encoded_hash:
                 continue
@@ -192,7 +209,7 @@ class MyBlockChain:
             verified_entries.append(
                 VerifiedReceive(
                     df=df,
-                    pubkey_fingerprint=pubkey_fingerprint(public_key_pem),
+                    pubkey_fingerprint=pubkey_fingerprint(str(item.public_key_pem)),
                     payload_content_hash=declared_hash,
                 )
             )
@@ -204,12 +221,13 @@ class MyBlockChain:
         verified_entries: list[VerifiedReceive],
         bt_addr: str,
         threshold: int,
-        config: Any,
+        config: BlockchainConfig,
     ) -> tuple[str, int, list[dict[str, str]], str, dict[str, int]] | None:
         """Return adoption data for one bt_addr when threshold is met."""
+        schema = config.data_schema
         reporters_for_addr: list[VerifiedReceive] = []
         for entry in verified_entries:
-            if bt_addr in entry.df["bt_addrs"].astype(str).values:
+            if bt_addr in entry.df[schema.bt_addr_column].astype(str).values:
                 reporters_for_addr.append(entry)
 
         unique_by_fingerprint: dict[str, VerifiedReceive] = {}
@@ -226,21 +244,23 @@ class MyBlockChain:
             return None
         content_hash = next(iter(content_hashes))
 
-        gakuseki_votes: Counter[str] = Counter()
+        identity_votes: Counter[str] = Counter()
         for entry in unique_entries:
-            rows = entry.df[entry.df["bt_addrs"].astype(str) == bt_addr]
+            rows = entry.df[
+                entry.df[schema.bt_addr_column].astype(str) == bt_addr
+            ]
             if rows.empty:
                 continue
-            gakuseki_votes[str(rows.iloc[0]["gakuseki"])] += 1
+            identity_votes[str(rows.iloc[0][schema.gakuseki_column])] += 1
 
-        if not gakuseki_votes:
+        if not identity_votes:
             return None
 
-        top_count = max(gakuseki_votes.values())
-        winners = [g for g, c in gakuseki_votes.items() if c == top_count]
+        top_count = max(identity_votes.values())
+        winners = [g for g, c in identity_votes.items() if c == top_count]
         if len(winners) != 1:
             return None
-        gakuseki = winners[0]
+        identity = winners[0]
 
         reporters: list[dict[str, str]] = [
             {
@@ -251,11 +271,11 @@ class MyBlockChain:
         ]
 
         return (
-            gakuseki,
+            identity,
             reporter_count,
             reporters,
             content_hash,
-            dict(gakuseki_votes),
+            dict(identity_votes),
         )
 
     def validate_chain(self) -> bool:

@@ -2,7 +2,7 @@
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ble_blockchain.paths import repo_root
@@ -40,6 +40,21 @@ class PathsConfig:
 
 
 @dataclass(frozen=True)
+class DataSchema:
+    """Column and field names for the observation data model."""
+    gakuseki_column: str = "gakuseki"
+    bt_addr_column: str = "bt_addrs"
+    csv_identity_rename: dict[str, str] = field(
+        default_factory=lambda: {"学籍番号": "gakuseki"}
+    )
+    output_columns: list[str] = field(
+        default_factory=lambda: ["gakuseki", "bt_addrs", "device_name"]
+    )
+    input_field: str = "gakuseki"
+    output_field: str = "bt_addrs"
+
+
+@dataclass(frozen=True)
 class BlockchainConfig:
     """Blockchain majority and export rules."""
     majority_ratio: float
@@ -48,6 +63,7 @@ class BlockchainConfig:
     min_verified_receives: int
     require_content_hash_agreement: bool
     min_distinct_devices_for_aggregate: int
+    data_schema: DataSchema
 
 
 def load_l2cap_config() -> L2capConfig:
@@ -78,6 +94,24 @@ def load_paths_config() -> PathsConfig:
     )
 
 
+def load_data_schema(raw: dict[str, Any]) -> DataSchema:
+    """Build a DataSchema from a partial data_schema config block."""
+    rename = raw.get("csv_identity_rename", {"学籍番号": "gakuseki"})
+    return DataSchema(
+        gakuseki_column=str(raw.get("gakuseki_column", "gakuseki")),
+        bt_addr_column=str(raw.get("bt_addr_column", "bt_addrs")),
+        csv_identity_rename={str(key): str(val) for key, val in rename.items()},
+        output_columns=[
+            str(column)
+            for column in raw.get(
+                "output_columns", ["gakuseki", "bt_addrs", "device_name"]
+            )
+        ],
+        input_field=str(raw.get("input_field", "gakuseki")),
+        output_field=str(raw.get("output_field", "bt_addrs")),
+    )
+
+
 def load_blockchain_config() -> BlockchainConfig:
     """Load blockchain rules from config/blockchain.json."""
     data = load_json_config("blockchain.json")
@@ -92,6 +126,7 @@ def load_blockchain_config() -> BlockchainConfig:
         min_distinct_devices_for_aggregate=int(
             data.get("min_distinct_devices_for_aggregate", 2)
         ),
+        data_schema=load_data_schema(data.get("data_schema", {})),
     )
 
 
