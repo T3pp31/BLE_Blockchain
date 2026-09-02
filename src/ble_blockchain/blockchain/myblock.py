@@ -131,7 +131,7 @@ class MyBlockChain:
         self.chain.append(new_block)
         return new_block
 
-    def build_from_receives(
+    def build_from_receives(  # pylint: disable=too-many-locals
         self, receive_data_list: list[ReceivedPayload]
     ) -> None:
         """Build blocks from verified receive payloads using majority rules."""

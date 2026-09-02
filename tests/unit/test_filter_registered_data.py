@@ -1,8 +1,11 @@
 """Unit tests for filter_registered_data pipeline step."""
 
-import pandas as pd
+from pathlib import Path
 
-from ble_blockchain.config.loader import DataSchema
+import pandas as pd
+import pytest
+
+from conftest_helpers import patch_preliminary_csv, student_mac_schema
 from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
 
 
@@ -56,7 +59,7 @@ def test_filter_registered_data_drops_wrong_gakuseki_for_registered_bt_addr() ->
 
 
 def test_filter_registered_data_with_alternate_schema(
-    tmp_path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """正常系: alternate DataSchema drives column rename and merge keys."""
     # Given: CSV with English headers and matching schema
@@ -65,18 +68,8 @@ def test_filter_registered_data_with_alternate_schema(
         "student_id,mac,note\nS001,11:22:33:44:55:66,phone\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(
-        "ble_blockchain.pipeline.delete_excess_data.load_paths_config",
-        lambda: type("P", (), {"preliminary_csv": str(csv_path)})(),
-    )
-    schema = DataSchema(
-        gakuseki_column="student_id",
-        bt_addr_column="mac",
-        csv_identity_rename={},
-        output_columns=["student_id", "mac", "device_name"],
-        input_field="student_id",
-        output_field="mac",
-    )
+    patch_preliminary_csv(monkeypatch, csv_path)
+    schema = student_mac_schema()
     df = pd.DataFrame(
         {
             "student_id": ["S001"],
@@ -95,7 +88,7 @@ def test_filter_registered_data_with_alternate_schema(
 
 
 def test_filter_registered_data_alternate_schema_drops_unregistered(
-    tmp_path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """異常系: alternate schema drops unregistered mac addresses."""
     # Given: registry without the scanned mac
@@ -104,18 +97,8 @@ def test_filter_registered_data_alternate_schema_drops_unregistered(
         "student_id,mac,note\nS001,11:22:33:44:55:66,phone\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(
-        "ble_blockchain.pipeline.delete_excess_data.load_paths_config",
-        lambda: type("P", (), {"preliminary_csv": str(csv_path)})(),
-    )
-    schema = DataSchema(
-        gakuseki_column="student_id",
-        bt_addr_column="mac",
-        csv_identity_rename={},
-        output_columns=["student_id", "mac", "device_name"],
-        input_field="student_id",
-        output_field="mac",
-    )
+    patch_preliminary_csv(monkeypatch, csv_path)
+    schema = student_mac_schema()
     df = pd.DataFrame(
         {
             "student_id": ["S001"],

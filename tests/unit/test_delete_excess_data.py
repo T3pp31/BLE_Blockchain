@@ -1,7 +1,11 @@
 """Unit tests for delete_excess_data pipeline step."""
 
-import pandas as pd
+from pathlib import Path
 
+import pandas as pd
+import pytest
+
+from conftest_helpers import patch_preliminary_csv
 from ble_blockchain.config.loader import DataSchema
 from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
 
@@ -39,7 +43,7 @@ def test_delete_excess_data_empty_when_no_match() -> None:
 
 
 def test_delete_excess_data_with_csv_identity_rename(
-    tmp_path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """正常系: csv_identity_rename maps foreign CSV headers into schema columns."""
     # Given: CSV using Japanese header and schema rename mapping
@@ -48,10 +52,7 @@ def test_delete_excess_data_with_csv_identity_rename(
         "学籍番号,bt_addrs,備考\n19G110001,FC:66:CF:BE:10:BF,phone\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(
-        "ble_blockchain.pipeline.delete_excess_data.load_paths_config",
-        lambda: type("P", (), {"preliminary_csv": str(csv_path)})(),
-    )
+    patch_preliminary_csv(monkeypatch, csv_path)
     schema = DataSchema(
         gakuseki_column="gakuseki",
         bt_addr_column="bt_addrs",

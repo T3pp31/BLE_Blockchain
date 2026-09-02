@@ -6,13 +6,14 @@ import pandas as pd
 import pytest
 
 from conftest import valid_tran_meta
+from conftest_helpers import student_mac_schema
 from ble_blockchain.blockchain.myblock import (
     MyBlockChain,
     compute_majority_threshold,
     payload_content_hash,
     pubkey_fingerprint,
 )
-from ble_blockchain.config.loader import DataSchema, load_blockchain_config
+from ble_blockchain.config.loader import BlockchainConfig, load_blockchain_config
 from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
 from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
 from ble_blockchain.types import ReceivedPayload
@@ -468,21 +469,11 @@ def test_data_schema_alternate_column_names(
 ) -> None:
     """正常系: alternate data_schema column names drive majority adoption."""
     # Given: schema using student_id / mac instead of gakuseki / bt_addrs
-    alt_schema = DataSchema(
-        gakuseki_column="student_id",
-        bt_addr_column="mac",
-        csv_identity_rename={},
-        output_columns=["student_id", "mac", "device_name"],
-        input_field="student_id",
-        output_field="mac",
-    )
+    alt_schema = student_mac_schema()
     fake_config = load_blockchain_config()
-    # Rebuild with alternate schema while keeping majority rules
-    from ble_blockchain.config.loader import BlockchainConfig
 
-    monkeypatch.setattr(
-        "ble_blockchain.blockchain.myblock.load_blockchain_config",
-        lambda: BlockchainConfig(
+    def load_alt_config() -> BlockchainConfig:
+        return BlockchainConfig(
             majority_ratio=fake_config.majority_ratio,
             one_block_per_bt_addr=fake_config.one_block_per_bt_addr,
             export_enabled=fake_config.export_enabled,
@@ -492,7 +483,11 @@ def test_data_schema_alternate_column_names(
                 fake_config.min_distinct_devices_for_aggregate
             ),
             data_schema=alt_schema,
-        ),
+        )
+
+    monkeypatch.setattr(
+        "ble_blockchain.blockchain.myblock.load_blockchain_config",
+        load_alt_config,
     )
 
     def identity_filter(df: pd.DataFrame) -> pd.DataFrame:
