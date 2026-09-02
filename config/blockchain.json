@@ -4,5 +4,19 @@
   "export_enabled": true,
   "min_verified_receives": 3,
   "require_content_hash_agreement": true,
-  "min_distinct_devices_for_aggregate": 2
+  "min_distinct_devices_for_aggregate": 2,
+  "data_schema": {
+    "gakuseki_column": "gakuseki",
+    "bt_addr_column": "bt_addrs",
+    "csv_identity_rename": {
+      "学籍番号": "gakuseki"
+    },
+    "output_columns": [
+      "gakuseki",
+      "bt_addrs",
+      "device_name"
+    ],
+    "input_field": "gakuseki",
+    "output_field": "bt_addrs"
+  }
 }

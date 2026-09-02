@@ -6,6 +6,7 @@ import pytest
 
 from conftest import valid_tran_meta
 from ble_blockchain.blockchain.myblock import MyBlockChain
+from ble_blockchain.config.loader import DataSchema
 
 
 def patch_chain_export_dir(
@@ -21,6 +22,33 @@ def patch_chain_export_dir(
     monkeypatch.setattr(
         "ble_blockchain.blockchain.export.load_paths_config",
         load_paths_config,
+    )
+
+
+def patch_preliminary_csv(
+    monkeypatch: pytest.MonkeyPatch, csv_path: Path
+) -> None:
+    """Redirect preliminary CSV path used by delete_excess_data."""
+    path_str = str(csv_path)
+
+    def load_paths_config() -> object:
+        return type("Paths", (), {"preliminary_csv": path_str})()
+
+    monkeypatch.setattr(
+        "ble_blockchain.pipeline.delete_excess_data.load_paths_config",
+        load_paths_config,
+    )
+
+
+def student_mac_schema() -> DataSchema:
+    """Return a DataSchema using student_id / mac column names."""
+    return DataSchema(
+        gakuseki_column="student_id",
+        bt_addr_column="mac",
+        csv_identity_rename={},
+        output_columns=["student_id", "mac", "device_name"],
+        input_field="student_id",
+        output_field="mac",
     )
 
 

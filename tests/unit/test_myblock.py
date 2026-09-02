@@ -6,15 +6,17 @@ import pandas as pd
 import pytest
 
 from conftest import valid_tran_meta
+from conftest_helpers import student_mac_schema
 from ble_blockchain.blockchain.myblock import (
     MyBlockChain,
     compute_majority_threshold,
     payload_content_hash,
     pubkey_fingerprint,
 )
-from ble_blockchain.config.loader import load_blockchain_config
+from ble_blockchain.config.loader import BlockchainConfig, load_blockchain_config
 from ble_blockchain.pipeline.delete_excess_data import filter_registered_data
 from ble_blockchain.pipeline.pandas_d_encode import pandas_encode
+from ble_blockchain.types import ReceivedPayload
 
 _DEFAULT_PUBLIC_KEY_PEM = (
     "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----"
@@ -34,8 +36,8 @@ def _receive_item(
     *,
     public_key_pem: str = _DEFAULT_PUBLIC_KEY_PEM,
     content_hash: Optional[str] = None,
-) -> list:
-    """Build a receive list entry for build_from_receives tests."""
+) -> ReceivedPayload:
+    """Build a ReceivedPayload for build_from_receives tests."""
     df = pd.DataFrame(
         {
             "gakuseki": [gakuseki],
@@ -45,7 +47,14 @@ def _receive_item(
     )
     if content_hash is None:
         content_hash = _content_hash_for_df(df)
-    return [df, None, b"sig", verified, public_key_pem, content_hash]
+    return ReceivedPayload(
+        df=df,
+        public_key=None,
+        signature=b"sig",
+        verified=verified,
+        public_key_pem=public_key_pem,
+        payload_content_hash=content_hash,
+    )
 
 
 def test_build_from_receives_majority_threshold() -> None:
@@ -129,7 +138,7 @@ def test_build_from_receives_below_threshold_no_block(
     # Given: 4 verified reporters split 2+2 across bt_addrs, threshold=3
     monkeypatch.setattr(
         "ble_blockchain.pipeline.delete_excess_data._load_preliminary_data",
-        lambda: pd.DataFrame(
+        lambda schema=None: pd.DataFrame(
             {
                 "gakuseki": ["19G110001", "19G110002"],
                 "bt_addrs": ["FC:66:CF:BE:10:BF", "BB:BB:BB:BB:BB:BB"],
@@ -318,9 +327,30 @@ def test_row_inflation_same_reporter_does_not_satisfy_majority() -> None:
     )
     content_hash = _content_hash_for_df(df)
     receives = [
-        [df, None, b"sig", True, "pem-a", content_hash],
-        [df, None, b"sig", True, "pem-a", content_hash],
-        [df, None, b"sig", True, "pem-a", content_hash],
+        ReceivedPayload(
+            df=df,
+            public_key=None,
+            signature=b"sig",
+            verified=True,
+            public_key_pem="pem-a",
+            payload_content_hash=content_hash,
+        ),
+        ReceivedPayload(
+            df=df,
+            public_key=None,
+            signature=b"sig",
+            verified=True,
+            public_key_pem="pem-a",
+            payload_content_hash=content_hash,
+        ),
+        ReceivedPayload(
+            df=df,
+            public_key=None,
+            signature=b"sig",
+            verified=True,
+            public_key_pem="pem-a",
+            payload_content_hash=content_hash,
+        ),
     ]
 
     # When: building chain
@@ -396,3 +426,98 @@ def test_validate_tran_meta_detects_tampered_count() -> None:
     errors = chain.validate_tran_meta_verbose()
     assert len(errors) == 1
     assert "reporters length" in errors[0].reason
+
+
+def test_filter_injection_bypasses_pipeline_csv() -> None:
+    """正常系: injected filter replaces pipeline CSV dependency."""
+    # Given: filter that keeps rows as-is (no preliminary CSV)
+    def identity_filter(df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    chain = MyBlockChain(filter_registered=identity_filter)
+    df = pd.DataFrame(
+        {
+            "gakuseki": ["ID-X"],
+            "bt_addrs": ["AA:BB:CC:DD:EE:FF"],
+            "device_name": ["x"],
+        }
+    )
+    content_hash = payload_content_hash(pandas_encode(df))
+    receives = [
+        ReceivedPayload(
+            df=df,
+            public_key=None,
+            signature=b"sig",
+            verified=True,
+            public_key_pem=f"pem-{index}",
+            payload_content_hash=content_hash,
+        )
+        for index in range(3)
+    ]
+
+    # When: building with injected filter
+    chain.build_from_receives(receives)
+
+    # Then: block created without preliminary CSV
+    assert len(chain.chain) == 1
+    assert chain.chain[0]["tran_body"]["input"]["gakuseki"] == "ID-X"
+    assert chain.chain[0]["tran_body"]["output"]["bt_addrs"] == "AA:BB:CC:DD:EE:FF"
+
+
+def test_data_schema_alternate_column_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """正常系: alternate data_schema column names drive majority adoption."""
+    # Given: schema using student_id / mac instead of gakuseki / bt_addrs
+    alt_schema = student_mac_schema()
+    fake_config = load_blockchain_config()
+
+    def load_alt_config() -> BlockchainConfig:
+        return BlockchainConfig(
+            majority_ratio=fake_config.majority_ratio,
+            one_block_per_bt_addr=fake_config.one_block_per_bt_addr,
+            export_enabled=fake_config.export_enabled,
+            min_verified_receives=fake_config.min_verified_receives,
+            require_content_hash_agreement=fake_config.require_content_hash_agreement,
+            min_distinct_devices_for_aggregate=(
+                fake_config.min_distinct_devices_for_aggregate
+            ),
+            data_schema=alt_schema,
+        )
+
+    monkeypatch.setattr(
+        "ble_blockchain.blockchain.myblock.load_blockchain_config",
+        load_alt_config,
+    )
+
+    def identity_filter(df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    chain = MyBlockChain(filter_registered=identity_filter)
+    df = pd.DataFrame(
+        {
+            "student_id": ["S001"],
+            "mac": ["11:22:33:44:55:66"],
+            "device_name": ["phone"],
+        }
+    )
+    content_hash = payload_content_hash(pandas_encode(df))
+    receives = [
+        ReceivedPayload(
+            df=df,
+            public_key=None,
+            signature=b"sig",
+            verified=True,
+            public_key_pem=f"pem-{index}",
+            payload_content_hash=content_hash,
+        )
+        for index in range(3)
+    ]
+
+    # When: building with alternate schema
+    chain.build_from_receives(receives)
+
+    # Then: block uses alternate field names
+    assert len(chain.chain) == 1
+    assert chain.chain[0]["tran_body"]["input"]["student_id"] == "S001"
+    assert chain.chain[0]["tran_body"]["output"]["mac"] == "11:22:33:44:55:66"

@@ -28,6 +28,8 @@ from ble_blockchain.config.loader import load_blockchain_config, load_paths_conf
 from ble_blockchain.paths import repo_root
 from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
 from ble_blockchain.pipeline.pandas_d_encode import pandas_decode, pandas_encode
+from ble_blockchain.types import ReceivedPayload
+
 RUNTIME_PROFILES_PATH = repo_root() / "config/runtime_profiles.json"
 
 
@@ -70,7 +72,7 @@ def run_communication_steps(
     profile: dict[str, Any],
     settings: DeviceSettings,
     tanmatsu_bt_addrs: list[str],
-    receive_data_list: list[Any],
+    receive_data_list: list[ReceivedPayload],
 ) -> None:
     """Execute discoverable, send, receive, and sleep steps from a profile."""
     defaults = {"sleep_seconds": 30}
@@ -108,7 +110,7 @@ def run_communication_steps(
 
 def process_received_payload(
     raw: bytes, trusted_peer_pems: frozenset[str]
-) -> list[Any]:
+) -> ReceivedPayload:
     """Decrypt, verify, and decode one received payload."""
     try:
         payload = unpack(raw)
@@ -128,19 +130,33 @@ def process_received_payload(
 
         content_hash = payload_content_hash(plaintext)
         if not verified:
-            return [None, public_key, payload.signature, False, None, None]
+            return ReceivedPayload(
+                df=None,
+                public_key=public_key,
+                signature=payload.signature,
+                verified=False,
+                public_key_pem=None,
+                payload_content_hash=None,
+            )
 
-        return [
-            df,
-            public_key,
-            payload.signature,
-            verified,
-            payload.public_key_pem,
-            content_hash,
-        ]
+        return ReceivedPayload(
+            df=df,
+            public_key=public_key,
+            signature=payload.signature,
+            verified=verified,
+            public_key_pem=payload.public_key_pem,
+            payload_content_hash=content_hash,
+        )
     except (ValueError, KeyError, json.JSONDecodeError) as exc:
         print(f"受信ペイロードの処理に失敗しました: {exc}")
-        return [None, None, b"", False, None, None]
+        return ReceivedPayload(
+            df=None,
+            public_key=None,
+            signature=b"",
+            verified=False,
+            public_key_pem=None,
+            payload_content_hash=None,
+        )
 
 
 def run_pipeline(  # pylint: disable=too-many-locals
@@ -158,7 +174,7 @@ def run_pipeline(  # pylint: disable=too-many-locals
 
     print(settings.tanmatsu_bt_addrs)
 
-    receive_data_list: list[Any] = []
+    receive_data_list: list[ReceivedPayload] = []
 
     run_communication_steps(
         profile, settings, settings.tanmatsu_bt_addrs, receive_data_list
