@@ -42,7 +42,9 @@ def _assert_polls_then_returns(svc: FileTransportService) -> None:
     """sleep を番兵化して receive_payload のポーリング発生を安全に検証する。"""
     real_sleep = time.sleep
     try:
-        time.sleep = lambda _seconds: (_ for _ in ()).throw(_PollingObserved())  # type: ignore[assignment]
+        time.sleep = (  # type: ignore[assignment]
+            lambda _seconds: (_ for _ in ()).throw(_PollingObserved())
+        )
         svc.receive_payload()
         pytest.fail("sleep (polling) should have been observed")
     except _PollingObserved:
@@ -77,8 +79,8 @@ class TestScan:
         bt_addrs, device_name = svc.scan()
 
         # Then: 空タプル（[]、[]）が返る
-        assert bt_addrs == []
-        assert device_name == []
+        assert not bt_addrs
+        assert not device_name
 
     def test_scan_missing_bt_addrs_column_raises_key_error(
         self, tmp_path: Path,
@@ -108,7 +110,7 @@ class TestSendPayload:
 
         # Then: inbox ディレクトリは作成されるがファイルは無い
         assert inbox.is_dir()
-        assert list(inbox.iterdir()) == []
+        assert not list(inbox.iterdir())
 
     def test_send_payload_single_peer(self, tmp_path: Path) -> None:
         """正常系: peers 1 件で受信者プレフィックスのファイルが作られる。"""
@@ -159,7 +161,7 @@ class TestReceivePayload:
 
         # Then: 内容が返り、ファイルは削除されている
         assert result == b"hello"
-        assert list(inbox.glob("*.bin")) == []
+        assert not list(inbox.glob("*.bin"))
 
     def test_receive_ignores_other_senders(self, tmp_path: Path) -> None:
         """異常系: 自分宛でないファイルは返さず、残される。"""
@@ -223,7 +225,7 @@ class TestReceivePayload:
         assert recent.exists()
 
 
-class TestRoundtrip:
+class TestRoundtrip:  # pylint: disable=too-few-public-methods
     """端末間ラウンドトリップのテスト。"""
 
     def test_roundtrip_device_a_to_device_b(self, tmp_path: Path) -> None:
@@ -247,7 +249,7 @@ class TestRoundtrip:
         )
 
 
-class TestStartDiscoverable:
+class TestStartDiscoverable:  # pylint: disable=too-few-public-methods
     """start_discoverable(): no-op のテスト。"""
 
     def test_start_discoverable_returns_none(self, tmp_path: Path) -> None:
@@ -255,9 +257,6 @@ class TestStartDiscoverable:
         # Given: file transport
         svc = _make_service(tmp_path / "inbox", tmp_path / "scan.csv")
 
-        # When: start_discoverable() を呼ぶ
-        result = svc.start_discoverable()
-
-        # Then: None が返り、副作用がない
-        assert result is None
+        # When/Then: start_discoverable() を呼んでも副作用がない
+        svc.start_discoverable()
         assert not (tmp_path / "inbox").exists()

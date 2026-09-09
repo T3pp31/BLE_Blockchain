@@ -6,7 +6,11 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from ble_blockchain.app.main import build_send_payload, run_communication_steps
+from ble_blockchain.app.main import (
+    build_send_payload,
+    process_received_payload,
+    run_communication_steps,
+)
 from ble_blockchain.cipher.cipher import make_key, public_key_to_pem
 from ble_blockchain.config.device_settings import DeviceSettings
 from ble_blockchain.transport_file import FileTransportService
@@ -38,7 +42,7 @@ def _read_first_registered_bt_addr() -> str:
     return str(df["bt_addrs"].iloc[0])
 
 
-class FakeScanTransport:
+class FakeScanTransport:  # pylint: disable=too-few-public-methods
     """TransportService 実装: scan が固定タプルを返し、呼び出しを記録するフェイク。"""
 
     def __init__(self, bt_addrs: list[str], device_names: list[str]) -> None:
@@ -49,20 +53,24 @@ class FakeScanTransport:
         self.receive_calls = 0
 
     def scan(self) -> tuple[list[str], list[str]]:
+        """Fixed addresses and device names (recorded via __init__)."""
         return self._bt_addrs, self._device_names
 
     def start_discoverable(self) -> None:
+        """Record one discoverable call (no-op)."""
         self.discoverable_calls += 1
 
     def send_payload(self, peers: list[str], payload_bytes: bytes) -> None:
+        """Record one send call (no-op)."""
         self.send_calls.append((peers, payload_bytes))
 
     def receive_payload(self) -> bytes:
+        """Record one receive call and return an empty payload."""
         self.receive_calls += 1
         return b""
 
 
-class TestBuildSendPayload:
+class TestBuildSendPayload:  # pylint: disable=too-few-public-methods
     """build_send_payload(): scan → 署名・暗号化・pack のテスト。"""
 
     def test_returns_verifiable_payload(self, tmp_path: Path) -> None:
@@ -81,8 +89,6 @@ class TestBuildSendPayload:
         payload = build_send_payload(settings, fake)
 
         # Then: pack された bytes が返り、受信検証で verified=True になる
-        from ble_blockchain.app.main import process_received_payload
-
         assert isinstance(payload, bytes)
         assert len(payload) > 0
         result = process_received_payload(payload, settings.trusted_peer_pems)

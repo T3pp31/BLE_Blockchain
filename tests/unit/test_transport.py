@@ -1,6 +1,7 @@
 """Unit tests for transport selection and BLE transport delegation."""
 
 from pathlib import Path
+from typing import Optional
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -10,7 +11,7 @@ from ble_blockchain.config.loader import TransportConfig
 from ble_blockchain.transport import BleTransportService, FileTransportService, load_transport
 
 
-def _make_settings(*, settings_path: Path | None = None) -> DeviceSettings:
+def _make_settings(*, settings_path: Optional[Path] = None) -> DeviceSettings:
     """Build a minimal DeviceSettings for transport selection (test helper)."""
     return DeviceSettings(
         profile="device1",
@@ -137,11 +138,10 @@ class TestBleTransportService:
             service = BleTransportService()
 
             # When: send_payload() を呼ぶ
-            services = service.send_payload(["AA:BB:CC:DD:EE:FF"], b"bytes")
+            service.send_payload(["AA:BB:CC:DD:EE:FF"], b"bytes")
 
         # Then: SEND が peers と payload で 1 回呼ばれる
         mock_send.assert_called_once_with(["AA:BB:CC:DD:EE:FF"], b"bytes")
-        assert services is None
 
     def test_receive_payload_delegates_to_l2cap_server(self) -> None:
         """正常系: receive_payload() は l2cap_server() の戻り値を返す。"""
