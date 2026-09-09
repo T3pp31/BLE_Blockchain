@@ -55,6 +55,16 @@ class DataSchema:
 
 
 @dataclass(frozen=True)
+class TransportConfig:
+    """Transport settings (BLE or file) for payload exchange."""
+    mode: str
+    file_inbox_dir: str
+    file_scan_csv: str
+    file_sender_id: str
+    file_poll_interval_sec: float
+
+
+@dataclass(frozen=True)
 class BlockchainConfig:
     """Blockchain majority and export rules."""
     majority_ratio: float
@@ -91,6 +101,21 @@ def load_paths_config() -> PathsConfig:
     return PathsConfig(
         preliminary_csv=str(data["preliminary_csv"]),
         chain_export_dir=str(data.get("chain_export_dir", "data/chains")),
+    )
+
+
+def load_transport_config() -> TransportConfig:
+    """Load transport settings from config/transport.json."""
+    data = load_json_config("transport.json")
+    file_block = data.get("file", {})
+    return TransportConfig(
+        mode=str(data["mode"]),
+        file_inbox_dir=str(file_block.get("inbox_dir", "data/transport/inbox")),
+        file_scan_csv=str(file_block.get("scan_csv", "data/transport/scan_results.csv")),
+        file_sender_id=str(file_block.get("sender_id", "device1")),
+        file_poll_interval_sec=float(
+            file_block.get("poll_interval_sec", 0.5)
+        ),
     )
 
 

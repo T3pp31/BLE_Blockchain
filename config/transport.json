@@ -1,0 +1,9 @@
+{
+  "mode": "ble",
+  "file": {
+    "inbox_dir": "data/transport/inbox",
+    "scan_csv": "data/transport/scan_results.csv",
+    "sender_id": "device1",
+    "poll_interval_sec": 0.5
+  }
+}
