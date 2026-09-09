@@ -1,7 +1,5 @@
 """Raspberry Pi BLE を discoverable にするヘルパー。"""
 
-import subprocess
-
 
 def start_discoverable() -> None:
     """
@@ -14,6 +12,6 @@ def start_discoverable() -> None:
 
 
     """
-    subprocess.run(
-        ["sudo", "bluetoothctl", "discoverable", "on"], check=False
-    )
+    import subprocess  # pylint: disable=import-outside-toplevel
+
+    subprocess.run(["sudo", "bluetoothctl", "discoverable", "on"], check=False)

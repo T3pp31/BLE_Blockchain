@@ -1,7 +1,6 @@
 """CLI entry point for the BLE scan, exchange, and blockchain pipeline."""
 
 import argparse
-import asyncio
 import json
 import time
 from pathlib import Path
@@ -9,9 +8,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from ble_blockchain.ble.discover import scan
 from ble_blockchain.ble.message_codec import MessagePayload, pack, unpack
-from ble_blockchain.ble.start_discoverable import start_discoverable
 from ble_blockchain.blockchain.aggregator import aggregate_chains
 from ble_blockchain.blockchain.export import export_chain as write_chain_export
 from ble_blockchain.blockchain.myblock import MyBlockChain, payload_content_hash
@@ -28,6 +25,7 @@ from ble_blockchain.config.loader import load_blockchain_config, load_paths_conf
 from ble_blockchain.paths import repo_root
 from ble_blockchain.pipeline.delete_excess_data import delete_excess_data
 from ble_blockchain.pipeline.pandas_d_encode import pandas_decode, pandas_encode
+from ble_blockchain.transport import TransportService, load_transport
 from ble_blockchain.types import ReceivedPayload
 
 RUNTIME_PROFILES_PATH = repo_root() / "config/runtime_profiles.json"
@@ -44,12 +42,12 @@ def load_runtime_profile(profile_name: str) -> dict[str, Any]:
     return profiles[profile_name]
 
 
-def build_send_payload(settings: DeviceSettings) -> bytes:
+def build_send_payload(settings: DeviceSettings, transport: TransportService) -> bytes:
     """Scan, filter, sign, and encrypt a payload ready for BLE send."""
     secret_key = load_signing_key_from_pem(settings.signing_key_path)
     public_key = secret_key.verifying_key
 
-    bt_addrs, device_name = asyncio.run(scan())
+    bt_addrs, device_name = transport.scan()
     df = pd.DataFrame(
         list(zip(bt_addrs, device_name)), columns=["bt_addrs", "device_name"]
     )
@@ -71,7 +69,7 @@ def build_send_payload(settings: DeviceSettings) -> bytes:
 def run_communication_steps(
     profile: dict[str, Any],
     settings: DeviceSettings,
-    tanmatsu_bt_addrs: list[str],
+    transport: TransportService,
     receive_data_list: list[ReceivedPayload],
 ) -> None:
     """Execute discoverable, send, receive, and sleep steps from a profile."""
@@ -85,22 +83,14 @@ def run_communication_steps(
         action = step["action"]
 
         if action == "discoverable":
-            start_discoverable()
+            transport.start_discoverable()
         elif action == "send":
-            # PyBluez is Linux-only; defer import so macOS dev/tests can load main.
-            from ble_blockchain.pipeline.send_and_receive import (  # pylint: disable=import-outside-toplevel
-                SEND,
-            )
-
-            payload_bytes = build_send_payload(settings)
-            SEND(tanmatsu_bt_addrs, payload_bytes)
+            payload_bytes = build_send_payload(settings, transport)
+            transport.send_payload(settings.tanmatsu_bt_addrs, payload_bytes)
         elif action == "receive":
-            from ble_blockchain.ble.l2cap_server import (  # pylint: disable=import-outside-toplevel
-                l2cap_server,
-            )
-
+            raw = transport.receive_payload()
             receive_data_list.append(
-                process_received_payload(l2cap_server(), settings.trusted_peer_pems)
+                process_received_payload(raw, settings.trusted_peer_pems)
             )
         elif action == "sleep":
             time.sleep(step.get("seconds", defaults["sleep_seconds"]))
@@ -174,10 +164,11 @@ def run_pipeline(  # pylint: disable=too-many-locals
 
     print(settings.tanmatsu_bt_addrs)
 
+    transport = load_transport(settings)
     receive_data_list: list[ReceivedPayload] = []
 
     run_communication_steps(
-        profile, settings, settings.tanmatsu_bt_addrs, receive_data_list
+        profile, settings, transport, receive_data_list
     )
 
     chain = MyBlockChain()

@@ -16,6 +16,7 @@ class DeviceSettings:
     signing_key_path: str
     public_key_pem: str
     trusted_peer_pems: frozenset[str]
+    settings_path: Path
 
 
 def load_device_settings(settings_path: Union[str, Path]) -> DeviceSettings:
@@ -50,4 +51,5 @@ def load_device_settings(settings_path: Union[str, Path]) -> DeviceSettings:
         signing_key_path=signing_key_path,
         public_key_pem=public_key_pem,
         trusted_peer_pems=trusted_peer_pems,
+        settings_path=path.resolve(),
     )

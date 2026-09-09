@@ -1,12 +1,13 @@
 # BLE_Blockchain
 
-卒論向けに、Raspberry Pi 複数台で BLE スキャン結果を暗号化・署名して L2CAP で交換し、過半数合意でブロックチェーンを構築するシステムです。
+卒論向けに、複数台の端末（Raspberry Pi 等）で BLE スキャン結果を暗号化・署名して交換し、過半数合意でブロックチェーンを構築するシステムです。
 
 ## システムの概要
 
-- Raspberry Pi（4 台想定）が BLE ビーコン周辺をスキャンし、事前登録 CSV と突合したデータを扱う
+- Raspberry Pi（4 台想定）などの端末が BLE ビーコン周辺をスキャンし、事前登録 CSV と突合したデータを扱う
 - ペイロードは **ECDSA 署名** と **AES-256-GCM 暗号化** のあと JSON でシリアライズする
-- Pi 間は **Bluetooth L2CAP**（`l2cap_client` / `l2cap_server`）で通信する
+- 端末間のペイロード交換は **Transport 抽象層**（`src/ble_blockchain/transport.py`）を介して行い、`config/transport.json` の `mode` で **BLE 方式（既定）** と **file 方式** を切り替えられる
+- BLE 方式は従来どおり **Bluetooth L2CAP**（`l2cap_client` / `l2cap_server`）で通信する。file 方式は Bluetooth を使わず、共有 inbox ディレクトリとスキャン結果 CSV で交換するため、BLE 非対応の環境（macOS 等）でも同一パイプラインが動く
 - 同時送受信を避けるため、`config/runtime_profiles.json` で端末ごとに **ラウンドロビン**（send / receive / sleep）を定義する
 - 検証済みの受信データから **過半数** の報告が揃った `bt_addrs` をブロックに載せ、チェーンを標準出力する
 
@@ -20,11 +21,14 @@ BLE_Blockchain/
 ├── pyproject.toml               # 依存関係・ble-blockchain コンソール定義
 ├── settings1.json … settings4.json
 ├── config/                      # JSON 設定のみ（Python コードはパッケージ内）
+│   └── transport.json           # Transport 方式切替（mode: ble / file）
 ├── data_folder/                 # 事前登録 CSV（paths.json で参照）
 ├── keys/                        # 端末別 ECDSA 鍵（PEM は .gitignore）
 ├── scripts/                     # Pi 向けセットアップ・鍵生成
 ├── src/ble_blockchain/          # アプリケーション本体（import ble_blockchain）
 │   ├── app/main.py              # パイプライン
+│   ├── transport.py             # Transport 抽象層（ble / file 切替）
+│   ├── transport_file.py        # file 方式（共有 inbox ディレクトリ）
 │   ├── ble/                     # スキャン・L2CAP・メッセージ
 │   ├── blockchain/              # チェーン構築・エクスポート・集約
 │   ├── cipher/                  # ECDSA・AES-256-GCM
@@ -42,10 +46,13 @@ BLE_Blockchain/
 |------|------|
 | `main.py` | 後方互換ラッパー（`python main.py` → パッケージ本体） |
 | `src/ble_blockchain/app/main.py` | パイプライン全体（設定読込 → ペイロード生成 → 送受信 → チェーン出力） |
-| `src/ble_blockchain/pipeline/send_and_receive.py` | 他 Pi への L2CAP 送信（`SEND`） |
-| `src/ble_blockchain/ble/discover.py` | BLE スキャン（Bleak） |
-| `src/ble_blockchain/ble/l2cap_client.py` / `l2cap_server.py` | L2CAP 送受信（PyBlueZ・Linux / Pi） |
-| `src/ble_blockchain/ble/start_discoverable.py` | `bluetoothctl discoverable on` |
+| `src/ble_blockchain/transport.py` | Transport 抽象層（`load_transport` で ble / file を選択） |
+| `src/ble_blockchain/transport_file.py` | file 方式の Transport（共有 inbox ディレクトリ + scan CSV） |
+| `config/transport.json` | Transport 方式切替（`mode`: `"ble"` 既定 / `"file"`） |
+| `src/ble_blockchain/pipeline/send_and_receive.py` | 他端末への L2CAP 送信（`SEND`。BLE 方式で使用） |
+| `src/ble_blockchain/ble/discover.py` | BLE スキャン（Bleak。BLE 方式で使用） |
+| `src/ble_blockchain/ble/l2cap_client.py` / `l2cap_server.py` | L2CAP 送受信（PyBlueZ・Linux / Pi。BLE 方式で使用） |
+| `src/ble_blockchain/ble/start_discoverable.py` | `bluetoothctl discoverable on`（BLE 方式で使用） |
 | `src/ble_blockchain/ble/message_codec.py` | JSON ペイロードの `pack` / `unpack` |
 | `src/ble_blockchain/pipeline/delete_excess_data.py` | 事前登録 CSV との突合・フィルタ |
 | `src/ble_blockchain/pipeline/pandas_d_encode.py` | DataFrame ↔ CSV bytes |
@@ -127,6 +134,7 @@ export BLE_AES_KEY=$(grep BLE_AES_KEY .env | cut -d= -f2)
 | `config/paths.json` | 事前登録 CSV パス・チェーンエクスポート／集約ディレクトリ（`chain_export_dir`） |
 | `config/blockchain.json` | 過半数比率・最小検証済み受信数・content_hash 一致・集約時の最小 Pi 数など |
 | `config/runtime_profiles.json` | 端末別送受信ステップ |
+| `config/transport.json` | Transport 方式切替（`mode`: `"ble"` / `"file"`、file 設定） |
 
 各 Raspberry Pi には端末専用の設定ファイル（`settings1.json`〜`settings4.json`）を用意しています。
 設定ファイルには、**自端末以外**の Bluetooth アドレス（3 台分）、送受信フローを表す `profile`、`signing_key_path`（端末ごとの永続 ECDSA 秘密鍵）、`public_key_pem`、他 Pi の `peer_public_keys` を記載してください。
@@ -181,9 +189,42 @@ CLI オプション:
 | `require_content_hash_agreement` | 同一 `bt_addrs` 採用時に payload の content_hash 一致を要求 |
 | `min_distinct_devices_for_aggregate` | canonical 集約時に推奨する異なる `device_id` の最小数 |
 
+### Transport 方式の切替
+
+ペイロード交換は `config/transport.json` の `mode` で **BLE 方式**（既定 `"ble"`）と **file 方式**（`"file"`）を切り替えられます。`load_transport()`（`src/ble_blockchain/transport.py`）が起動時にこの設定を読み、`scan` / `start_discoverable` / `send_payload` / `receive_payload` を提供する Transport サービス（`BleTransportService` / `FileTransportService`）を選択します。
+
+```json
+{
+  "mode": "ble",
+  "file": {
+    "inbox_dir": "data/transport/inbox",
+    "scan_csv": "data/transport/scan_results.csv",
+    "sender_id": "device1",
+    "poll_interval_sec": 0.5
+  }
+}
+```
+
+| キー | 内容 |
+|------|------|
+| `mode` | `"ble"`（既定、BLE 方式）または `"file"`（file 方式） |
+| `file.inbox_dir` | file 方式の共有受信ディレクトリ（`data/transport/inbox`） |
+| `file.scan_csv` | file 方式でスキャン結果を読み込む CSV（`data/transport/scan_results.csv`） |
+| `file.sender_id` | 自端末の ID（file 方式で受信ファイルの識別に使う） |
+| `file.poll_interval_sec` | file 方式の受信ポーリング間隔（秒、既定 `0.5`） |
+
+#### file 方式の動かし方
+
+1. `config/transport.json` の `mode` を `"file"` に変更します。
+2. `file.scan_csv` のパス（既定 `data/transport/scan_results.csv`）に、`bt_addrs` / `device_name` の **2 列の CSV** を用意します（BLE 無しでスキャン結果を模擬）。ファイルが無い場合はスキャン結果が空になります。
+3. 受信は共有の inbox ディレクトリ（`file.inbox_dir`）で行います。送信側は受信者 ID をプレフィックスにしたファイルを書き、受信側は自分の `sender_id` をプレフィックスにしたファイルを読みます。
+4. 端末ごとに `file.sender_id` を変えてください（例: `device1` / `device2` / …）。`sender_id` が未指定の場合は `settingsN.json` のファイル名（`settings1` 等）が使われます。
+
+file 方式は Bluetooth を使わないため、macOS 等の BLE/L2CAP 非対応環境でも同一パイプラインを動かせます。
+
 ## 処理の流れ
 
-実装（`src/ble_blockchain/app/main.py`）に基づく全体フローです。**BLE スキャンとペイロード生成は `send` ステップの直前**に行い、その後 `runtime_profiles` の `steps` を順に実行します。署名には `settingsN.json` の永続秘密鍵を使います。
+実装（`src/ble_blockchain/app/main.py`）に基づく全体フローです。**スキャンとペイロード生成は `send` ステップの直前**に行い、その後 `runtime_profiles` の `steps` を順に実行します。スキャン・送信・受信・discoverable はすべて Transport 経由（`transport.scan()` 等）で実行し、BLE 方式なら BLE のスキャン結果を、file 方式なら `scan_results.csv` のスキャン結果を使います。署名には `settingsN.json` の永続秘密鍵を使います。
 
 ### 全体フローチャート
 
@@ -198,7 +239,7 @@ flowchart TD
 
     subgraph build_on_send["build_send_payload（send 直前）"]
         BuildPayload[build_send_payload] --> LoadKey[永続 ECDSA 秘密鍵を読込]
-        LoadKey --> Scan[BLE スキャン discover.py]
+        LoadKey --> Scan["transport.scan()<br/>BLE または file のスキャン結果"]
         Scan --> Filter[pipeline.delete_excess_data<br/>事前登録 CSV と突合]
         Filter --> EncPlain[pandas_encode]
         EncPlain --> Sign[ECDSA 署名]
@@ -208,10 +249,10 @@ flowchart TD
 
     Pack --> StepsLoop{"run_communication_steps<br/>profile の steps を順次"}
 
-    StepsLoop -->|discoverable| Disc[start_discoverable]
+    StepsLoop -->|discoverable| Disc["transport.start_discoverable()<br/>BLE 方式: bluetoothctl discoverable on<br/>file 方式: 何もしない"]
     StepsLoop -->|send| BuildPayload
-    StepsLoop -->|send| Send["SEND → 各 peer へ L2CAP 送信"]
-    StepsLoop -->|receive| Recv[L2CAP 受信]
+    StepsLoop -->|send| Send["transport.send_payload()<br/>BLE 方式: 各 peer へ L2CAP 送信<br/>file 方式: inbox にファイル書き込み"]
+    StepsLoop -->|receive| Recv["transport.receive_payload()<br/>BLE 方式: L2CAP 受信<br/>file 方式: inbox からファイル読み取り"]
     StepsLoop -->|sleep| Sleep[time.sleep]
 
     Recv --> Proc[process_received_payload]
@@ -242,14 +283,14 @@ flowchart TD
 
 ### テキスト要約
 
-1. `settingsN.json` から他 Pi の BT アドレスと `profile` を読み込む（`ble_blockchain.config.device_settings`）
+1. `settingsN.json` から他端末の BT アドレスと `profile` を読み込む（`ble_blockchain.config.device_settings`）
 2. `settingsN.json` の `signing_key_path` から ECDSA 秘密鍵を読み込む（`ble_blockchain.cipher`）
-3. BLE 端末をスキャンする（`ble_blockchain.ble.discover`）
+3. Transport 経由でスキャンする（`transport.scan()`。BLE 方式は `ble_blockchain.ble.discover`、file 方式は `scan_results.csv`）
 4. 事前登録 CSV と照合し不要データを除去する（`ble_blockchain.pipeline.delete_excess_data`）
 5. CSV bytes に ECDSA 署名する
 6. 同一 CSV bytes を AES-256-GCM で暗号化する
 7. JSON ペイロードにシリアライズする（`ble_blockchain.ble.message_codec`）
-8. `runtime_profiles` の `steps` に従い、discoverable / send / receive / sleep を実行する
+8. `runtime_profiles` の `steps` に従い、discoverable / send / receive / sleep を Transport 経由で実行する
 9. 受信ごとに復号・署名検証する（検証失敗はチェーン追加対象外）
 10. 検証済み受信が `min_verified_receives` 以上のとき、**ユニーク報告者数**が過半数以上かつ `content_hash` が一致した `bt_addrs` を、CSV 再突合後の gakuseki 多数決でブロックに追加し、チェーンを出力する
 
@@ -317,8 +358,8 @@ docker run --rm -v "$(pwd)/data:/data" ble-chain-validator /data/chains/canonica
 
 ### 実行環境の注意
 
-- L2CAP（PyBlueZ）は **Linux（Raspberry Pi）** 向けです。macOS では送受信部分は動作しません。
-- 全 Pi で `ble-blockchain`（または `main.py`）を起動するタイミングの同期は、主に `sleep` 秒数に依存します。
+- BLE 方式（L2CAP / PyBlueZ）は **Linux（Raspberry Pi）** 向けです。macOS では BLE 方式の送受信部分は動作しません。ファイル共有が可能な環境であれば、**file 方式**（`config/transport.json` の `mode` を `"file"` に変更）で macOS 等でも同一パイプラインが動きます。
+- 全端末で `ble-blockchain`（または `main.py`）を起動するタイミングの同期は、主に `sleep` 秒数に依存します。
 
 ## セキュリティ
 

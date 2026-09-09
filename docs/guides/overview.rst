@@ -5,6 +5,12 @@
 卒業研究用システムです。Raspberry Pi 複数台が BLE スキャン結果を暗号化・署名して
 L2CAP で交換し、過半数合意でブロックチェーンを構築します。
 
+ペイロード交換は Transport 抽象層（``src/ble_blockchain/transport.py``）を介して
+行います。``config/transport.json`` の ``mode`` で **BLE 方式**（既定）と **file 方式**
+を切り替えられ、file 方式では Bluetooth を使わず共有 inbox ディレクトリと
+スキャン結果 CSV で交換するため、BLE 非対応環境（macOS 等）でも同一パイプラインが
+動きます。
+
 リポジトリレイアウト
 --------------------
 
@@ -16,10 +22,12 @@ L2CAP で交換し、過半数合意でブロックチェーンを構築しま�
 
    BLE_Blockchain/
    ├── main.py                 # 後方互換ラッパー
-   ├── config/                 # JSON 設定
-   ├── settings1.json …
+   ├── config/                 # JSON 設定（transport.json 等）
+   ├── settings1.json …        # 端末別設定
    ├── src/ble_blockchain/
    │   ├── app/main.py         # パイプライン
+   │   ├── transport.py        # Transport 抽象層（ble / file 切替）
+   │   ├── transport_file.py   # file 方式（共有 inbox）
    │   ├── ble/
    │   ├── blockchain/
    │   ├── cipher/
